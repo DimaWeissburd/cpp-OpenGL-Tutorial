@@ -13,6 +13,8 @@ include_directories(include)
 add_executable(CPP_OpenGL_Tutorial
         src/main.cpp
         src/glad.c
-        src/stb.cpp)
+        src/stb.cpp
+        src/Shader.cpp
+        src/Shader.h)
 
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
