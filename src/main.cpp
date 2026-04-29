@@ -10,11 +10,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <../src/Shader.h>
+#include <../src/io/Keyboard.h>
+#include <../src/io/Mouse.h>
+#include <../src/io/Joystick.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
 float mixVal = 0.5f;
+
+glm::mat4 transform = glm::mat4(1.0f);
+Joystick mainJoystick(0);
 
 int main() {
     glfwInit();
@@ -43,6 +49,11 @@ int main() {
     glViewport(0, 0, 800, 600);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    glfwSetKeyCallback(window, Keyboard::keyCallback);
+    glfwSetCursorPosCallback(window, Mouse::cursorPosCallback);
+    glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
+    glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
 
     Shader shader("../assets/vertex_core.glsl", "../assets/fragment_core.glsl");
 
@@ -91,7 +102,7 @@ int main() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cout << "Failed to load texture" << std::endl;
+        std::cout << "Failed to load texture." << std::endl;
     }
 
     stbi_image_free(data);
@@ -110,7 +121,7 @@ int main() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cout << "Failed to load texture" << std::endl;
+        std::cout << "Failed to load texture." << std::endl;
     }
 
     stbi_image_free(data);
@@ -126,6 +137,13 @@ int main() {
     trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     shader.activate();
     shader.setMat4("transform", trans);
+
+    mainJoystick.update();
+    if (mainJoystick.isPresent()) {
+        std::cout << "Joystick " << mainJoystick.getName() << " is present." << std::endl;
+    } else {
+        std::cout << "Joystick not present." << std::endl;
+    }
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -145,6 +163,7 @@ int main() {
         shader.setMat4("transform", trans);
 
         shader.setFloat("mixVal", mixVal);
+        shader.setMat4("transform", transform);
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -165,21 +184,66 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void processInput(GLFWwindow* window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    if (Keyboard::key(GLFW_KEY_ESCAPE) || mainJoystick.buttonState(GLFW_JOYSTICK_BTN_DOWN)) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        mixVal += 0.001f;
+    float lx = mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X);
+    float ly = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y);
+    float rx = mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_STICK_X);
+    float ry = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_STICK_Y);
+    float rt = mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2 + 0.5f;
+    float lt = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2 + 0.5f;
+
+    // std::cout << "Left Stick: x-" << lx << ", y-" << ly << std::endl;
+    // std::cout << "Right Stick: x-" << rx << ", y-" << ry << std::endl;
+    // std::cout << "Triggers: Left-" << lt << ", Right-" << rt << std::endl;
+
+    if (Keyboard::key(GLFW_KEY_W)) {
+        transform = glm::translate(transform, glm::vec3(0.0f, 0.01f, 0.0f));
+    }
+    if (Keyboard::key(GLFW_KEY_S)) {
+        transform = glm::translate(transform, glm::vec3(0.0f, -0.01f, 0.0f));
+    }
+    if (Keyboard::key(GLFW_KEY_A)) {
+        transform = glm::translate(transform, glm::vec3(-0.01f, 0.0f, 0.0f));
+    }
+    if (Keyboard::key(GLFW_KEY_D)) {
+        transform = glm::translate(transform, glm::vec3(0.01f, 0.0f, 0.0f));
+    }
+
+    if (std::abs(lx) > 0.05f) {
+        transform = glm::translate(transform, glm::vec3(lx / 50.0f, 0.0f, 0.0f));
+    }
+    if (std::abs(ly) > 0.05f) {
+        transform = glm::translate(transform, glm::vec3(0.0f, ly / 50.0f, 0.0f));
+    }
+
+    // if (rt > 0.05f) {
+    //     transform = glm::scale(transform, glm::vec3(1 + rt / 10.0f, 1 + rt / 10.0f, 0.0f));
+    // }
+    // if (lt > 0.05f) {
+    //     transform = glm::scale(transform, glm::vec3(1 - lt / 50.0f, 1 - lt / 10.0f, 0.0f));
+    // }
+
+    if (Keyboard::key(GLFW_KEY_UP)) {
+        mixVal += 0.005f;
         if (mixVal > 1.0f) {
             mixVal = 1.0f;
         }
     }
-
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        mixVal -= 0.001f;
+    if (Keyboard::key(GLFW_KEY_DOWN)) {
+        mixVal -= 0.005f;
         if (mixVal < 0.0f) {
             mixVal = 0.0f;
         }
     }
+
+    // if (std::abs(ry) > 0.05f) {
+    //     if (mixVal > 0.0f && mixVal < 1.0f) {
+    //         mixVal += -ry / 100.0f;
+    //     }
+    // }
+
+    mainJoystick.update();
 }
