@@ -19,8 +19,11 @@ void processInput(GLFWwindow* window);
 
 float mixVal = 0.5f;
 
-glm::mat4 transform = glm::mat4(1.0f);
-Joystick mainJoystick(0);
+Joystick joystick(0);
+
+unsigned int SCR_WIDTH = 800, SCR_HEIGHT = 600;
+float x, y, z;
+float theta = 45.0f;
 
 int main() {
     glfwInit();
@@ -32,7 +35,7 @@ int main() {
     glfwWindowHint(GLFW_OPEGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Tutorial", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL Tutorial", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window." << std::endl;
         glfwTerminate();
@@ -46,7 +49,7 @@ int main() {
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -55,34 +58,64 @@ int main() {
     glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
     glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
 
+    glEnable(GL_DEPTH_TEST);
+
     Shader shader("../assets/vertex_core.glsl", "../assets/fragment_core.glsl");
 
     float vertices[] = {
-        // Positions            Colors                 Texture coordinates
-        -0.5f,  -0.5f, 0.0f,    1.0f, 1.0f, 0.5f,      0.0f, 0.0f,
-        -0.5f,   0.5f, 0.0f,    0.5f, 1.0f, 0.75f,     0.0f, 1.0f,
-         0.5f,  -0.5f, 0.0f,    0.6f, 1.0f, 0.2f,      1.0f, 0.0f,
-         0.5f,   0.5f, 0.0f,    1.0f, 0.2f, 1.0f,      1.0f, 1.0f
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
-    unsigned int indices[] = {
-        0, 1, 2,
-        3, 1, 2
-    };
-
-    unsigned int VAO, VBO, EBO;
+    unsigned int VAO, VBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
 
     unsigned int texture1, texture2;
 
@@ -130,25 +163,21 @@ int main() {
     shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glm::mat4 trans = glm::mat4(1.0f);
-    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    shader.activate();
-    shader.setMat4("transform", trans);
-
-    mainJoystick.update();
-    if (mainJoystick.isPresent()) {
-        std::cout << "Joystick " << mainJoystick.getName() << " is present." << std::endl;
+    joystick.update();
+    if (joystick.isPresent()) {
+        std::cout << "Joystick " << joystick.getName() << " is present." << std::endl;
     } else {
         std::cout << "Joystick not present." << std::endl;
     }
 
+    x = 0.0f;
+    y = 0.0f;
+    z = 3.0f;
+
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
@@ -156,16 +185,26 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texture2);
 
         glBindVertexArray(VAO);
+
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 projection = glm::mat4(1.0f);
+
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));
+        view = glm::translate(view, glm::vec3(-x, -y, -z));
+        projection = glm::perspective(glm::radians(theta), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
         shader.activate();
 
-        float timeValue = glfwGetTime();
-        trans = glm::rotate(trans, glm::radians(timeValue / 100), glm::vec3(0.1f, 0.1f, 0.1f));
-        shader.setMat4("transform", trans);
+        shader.setMat4("model", model);
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
 
         shader.setFloat("mixVal", mixVal);
-        shader.setMat4("transform", transform);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -173,7 +212,6 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
 
     glfwTerminate();
     return 0;
@@ -181,50 +219,27 @@ int main() {
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
 }
 
 void processInput(GLFWwindow* window) {
-    if (Keyboard::key(GLFW_KEY_ESCAPE) || mainJoystick.buttonState(GLFW_JOYSTICK_BTN_DOWN)) {
+    if (Keyboard::key(GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
-    float lx = mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X);
-    float ly = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y);
-    float rx = mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_STICK_X);
-    float ry = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_STICK_Y);
-    float rt = mainJoystick.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2 + 0.5f;
-    float lt = -mainJoystick.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2 + 0.5f;
-
-    // std::cout << "Left Stick: x-" << lx << ", y-" << ly << std::endl;
-    // std::cout << "Right Stick: x-" << rx << ", y-" << ry << std::endl;
-    // std::cout << "Triggers: Left-" << lt << ", Right-" << rt << std::endl;
-
     if (Keyboard::key(GLFW_KEY_W)) {
-        transform = glm::translate(transform, glm::vec3(0.0f, 0.01f, 0.0f));
+        y -= 0.01f;
     }
     if (Keyboard::key(GLFW_KEY_S)) {
-        transform = glm::translate(transform, glm::vec3(0.0f, -0.01f, 0.0f));
+        y += 0.01f;
     }
     if (Keyboard::key(GLFW_KEY_A)) {
-        transform = glm::translate(transform, glm::vec3(-0.01f, 0.0f, 0.0f));
+        x += 0.01f;
     }
     if (Keyboard::key(GLFW_KEY_D)) {
-        transform = glm::translate(transform, glm::vec3(0.01f, 0.0f, 0.0f));
+        x -= 0.01f;
     }
-
-    if (std::abs(lx) > 0.05f) {
-        transform = glm::translate(transform, glm::vec3(lx / 50.0f, 0.0f, 0.0f));
-    }
-    if (std::abs(ly) > 0.05f) {
-        transform = glm::translate(transform, glm::vec3(0.0f, ly / 50.0f, 0.0f));
-    }
-
-    // if (rt > 0.05f) {
-    //     transform = glm::scale(transform, glm::vec3(1 + rt / 10.0f, 1 + rt / 10.0f, 0.0f));
-    // }
-    // if (lt > 0.05f) {
-    //     transform = glm::scale(transform, glm::vec3(1 - lt / 50.0f, 1 - lt / 10.0f, 0.0f));
-    // }
 
     if (Keyboard::key(GLFW_KEY_UP)) {
         mixVal += 0.005f;
@@ -239,11 +254,27 @@ void processInput(GLFWwindow* window) {
         }
     }
 
-    // if (std::abs(ry) > 0.05f) {
-    //     if (mixVal > 0.0f && mixVal < 1.0f) {
-    //         mixVal += -ry / 100.0f;
-    //     }
-    // }
+    joystick.update();
 
-    mainJoystick.update();
+    float lx = joystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X);
+    float ly = -joystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y);
+
+    if (std::abs(lx) > 0.05f) {
+        x -= lx / 5.0f;
+    }
+    if (std::abs(ly) > 0.05f) {
+        z += ly / 5.0f;
+    }
+    if (joystick.buttonState(GLFW_JOYSTICK_BTN_DOWN) == GLFW_PRESS) {
+        y += 0.05f;
+    }
+    if (joystick.buttonState(GLFW_JOYSTICK_BTN_UP) == GLFW_PRESS) {
+        y -= 0.05f;
+    }
+    if (joystick.buttonState(GLFW_JOYSTICK_BTN_LEFT) == GLFW_PRESS) {
+        theta -= 0.25f;
+    }
+    if (joystick.buttonState(GLFW_JOYSTICK_BTN_RIGHT) == GLFW_PRESS) {
+        theta += 0.25f;
+    }
 }
