@@ -9,15 +9,25 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <../src/Shader.h>
+#include <../src/rendering/Shader.h>
+#include <../src/rendering/Camera.h>
 #include <../src/io/Keyboard.h>
 #include <../src/io/Mouse.h>
 #include <../src/io/Joystick.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+void processInput(GLFWwindow* window, double dt);
 
 float mixVal = 0.5f;
+
+Camera cameras[2] = {
+    Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
+    Camera(glm::vec3(10.0f, 10.0f, 10.0f))
+};
+int activeCamera = 0;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
 Joystick joystick(0);
 
@@ -57,6 +67,8 @@ int main() {
     glfwSetCursorPosCallback(window, Mouse::cursorPosCallback);
     glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
     glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -175,7 +187,11 @@ int main() {
     z = 3.0f;
 
     while (!glfwWindowShouldClose(window)) {
-        processInput(window);
+        double currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
+        processInput(window, deltaTime);
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -191,8 +207,8 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f);
 
         model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));
-        view = glm::translate(view, glm::vec3(-x, -y, -z));
-        projection = glm::perspective(glm::radians(theta), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        view = cameras[activeCamera].getViewMatrix();
+        projection = glm::perspective(glm::radians(cameras[activeCamera].zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         shader.activate();
 
@@ -223,22 +239,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     SCR_HEIGHT = height;
 }
 
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow* window, double dt) {
     if (Keyboard::key(GLFW_KEY_ESCAPE)) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-
-    if (Keyboard::key(GLFW_KEY_W)) {
-        y -= 0.01f;
-    }
-    if (Keyboard::key(GLFW_KEY_S)) {
-        y += 0.01f;
-    }
-    if (Keyboard::key(GLFW_KEY_A)) {
-        x += 0.01f;
-    }
-    if (Keyboard::key(GLFW_KEY_D)) {
-        x -= 0.01f;
     }
 
     if (Keyboard::key(GLFW_KEY_UP)) {
@@ -254,27 +257,36 @@ void processInput(GLFWwindow* window) {
         }
     }
 
-    joystick.update();
+    if (Keyboard::keyPressed(GLFW_KEY_TAB)) {
+        activeCamera = activeCamera == 0 ? 1 : 0;
+    }
 
-    float lx = joystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X);
-    float ly = -joystick.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y);
+    if (Keyboard::key(GLFW_KEY_W)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::FORWARD, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_S)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::BACKWARD, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_D)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::RIGHT, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_A)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::LEFT, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_SPACE)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::UP, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
+        cameras[activeCamera].updateCameraPosition(CameraDirection::DOWN, dt);
+    }
 
-    if (std::abs(lx) > 0.05f) {
-        x -= lx / 5.0f;
+    double dx = Mouse::getDX(), dy = Mouse::getDY();
+    if (dx != 0 || dy != 0) {
+        cameras[activeCamera].updateCameraDirection(dx, dy);
     }
-    if (std::abs(ly) > 0.05f) {
-        z += ly / 5.0f;
-    }
-    if (joystick.buttonState(GLFW_JOYSTICK_BTN_DOWN) == GLFW_PRESS) {
-        y += 0.05f;
-    }
-    if (joystick.buttonState(GLFW_JOYSTICK_BTN_UP) == GLFW_PRESS) {
-        y -= 0.05f;
-    }
-    if (joystick.buttonState(GLFW_JOYSTICK_BTN_LEFT) == GLFW_PRESS) {
-        theta -= 0.25f;
-    }
-    if (joystick.buttonState(GLFW_JOYSTICK_BTN_RIGHT) == GLFW_PRESS) {
-        theta += 0.25f;
+
+    double scrollDy = Mouse::getScrollDY();
+    if (scrollDy != 0) {
+        cameras[activeCamera].updateCameraZoom(scrollDy);
     }
 }

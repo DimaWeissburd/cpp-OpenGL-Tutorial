@@ -16,13 +16,15 @@ add_executable(CPP_OpenGL_Tutorial
         src/main.cpp
         src/glad.c
         src/stb.cpp
-        src/Shader.cpp
-        src/Shader.h
         src/io/Joystick.cpp
         src/io/Joystick.h
         src/io/mouse.cpp
         src/io/mouse.h
         src/io/keyboard.cpp
-        src/io/keyboard.h)
+        src/io/keyboard.h
+        src/rendering/Shader.cpp
+        src/rendering/Shader.h
+        src/rendering/Camera.cpp
+        src/rendering/Camera.h)
 
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
