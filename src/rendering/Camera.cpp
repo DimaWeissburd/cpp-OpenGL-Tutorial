@@ -1,12 +1,13 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 position) : cameraPosition(position)
-                                    ,cameraFront(glm::vec3(0.0f, 0.0f, -1.0f))
-                                    ,worldUp(glm::vec3(0.0f, 1.0f, 0.0f))
-                                    ,yaw(-90.0f)
-                                    ,pitch(0.0f)
-                                    ,speed(2.5f)
-                                    ,zoom(45.0f) {
+Camera::Camera(glm::vec3 position)
+    : cameraPosition(position)
+     ,cameraFront(glm::vec3(0.0f, 0.0f, -1.0f))
+     ,worldUp(glm::vec3(0.0f, 1.0f, 0.0f))
+     ,yaw(-90.0f)
+     ,pitch(0.0f)
+     ,speed(2.5f)
+     ,zoom(45.0f) {
     updateCameraVectors();
 }
 
@@ -53,6 +54,10 @@ void Camera::updateCameraZoom(double dy) {
     } else {
         zoom = 45.0f;
     }
+}
+
+float Camera::getZoom() {
+    return zoom;
 }
 
 glm::mat4 Camera::getViewMatrix() {

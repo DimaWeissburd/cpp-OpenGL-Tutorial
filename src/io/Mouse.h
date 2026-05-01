@@ -19,6 +19,7 @@ public:
     static bool buttonChanged(int button);
     static bool buttonPressed(int button);
     static bool buttonReleased(int button);
+
 private:
     static double x;
     static double y;

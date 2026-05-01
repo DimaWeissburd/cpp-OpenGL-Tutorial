@@ -25,6 +25,15 @@ add_executable(CPP_OpenGL_Tutorial
         src/rendering/Shader.cpp
         src/rendering/Shader.h
         src/rendering/Camera.cpp
-        src/rendering/Camera.h)
+        src/rendering/Camera.h
+        src/rendering/Screen.cpp
+        src/rendering/Screen.h
+        src/rendering/Texture.h
+        src/rendering/Texture.cpp
+        src/rendering/Mesh.h
+        src/rendering/Mesh.cpp
+        src/rendering/Model.h
+        src/rendering/Model.cpp
+        src/rendering/Models/cube.hpp)
 
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
