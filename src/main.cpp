@@ -17,11 +17,9 @@
 #include <../src/rendering/Shader.h>
 #include <../src/rendering/Texture.h>
 #include <../src/rendering/Models/Cube.hpp>
+#include <../src/rendering/Models/Lamp.hpp>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(double dt);
-
-float mixVal = 0.5f;
 
 Camera cameras[2] = {
     Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
@@ -64,9 +62,13 @@ int main() {
     screen.setParameters();
 
     Shader shader("../assets/object.vs", "../assets/object.fs");
+    Shader lampShader("../assets/object.vs", "../assets/lamp.fs");
 
-    Cube cube(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.75f));
+    Cube cube(Material::mix(Material::gold, Material::emerald), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.75f));
     cube.init();
+
+    Lamp lamp(glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-1.0f, -0.5f, -0.5f), glm::vec3(0.25f));
+    lamp.init();
 
     joystick.update();
     if (joystick.isPresent()) {
@@ -84,6 +86,12 @@ int main() {
         screen.update();
 
         shader.activate();
+        shader.set3Float("light.position", lamp.position);
+        shader.set3Float("viewPosition", cameras[activeCamera].cameraPosition);
+
+        shader.set3Float("light.ambient", lamp.ambient);
+        shader.set3Float("light.diffuse", lamp.diffuse);
+        shader.set3Float("light.specular", lamp.specular);
 
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
@@ -94,39 +102,26 @@ int main() {
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        shader.setFloat("mixVal", mixVal);
-
         cube.render(shader);
+
+        lampShader.activate();
+        lampShader.setMat4("view", view);
+        lampShader.setMat4("projection", projection);
+        lamp.render(lampShader);
 
         screen.newFrame();
     }
+
+    cube.cleanup();
+    lamp.cleanup();
 
     glfwTerminate();
     return 0;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-    SCR_WIDTH = width;
-    SCR_HEIGHT = height;
-}
-
 void processInput(double dt) {
     if (Keyboard::key(GLFW_KEY_ESCAPE)) {
         screen.setShouldClose(true);
-    }
-
-    if (Keyboard::key(GLFW_KEY_UP)) {
-        mixVal += 0.005f;
-        if (mixVal > 1.0f) {
-            mixVal = 1.0f;
-        }
-    }
-    if (Keyboard::key(GLFW_KEY_DOWN)) {
-        mixVal -= 0.005f;
-        if (mixVal < 0.0f) {
-            mixVal = 0.0f;
-        }
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_TAB)) {

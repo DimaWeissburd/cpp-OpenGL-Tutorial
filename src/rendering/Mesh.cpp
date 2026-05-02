@@ -6,11 +6,22 @@ std::vector<Vertex> Vertex::genList(float* vertices, int noVertices) {
     int stride = sizeof(Vertex) / sizeof(float);
 
     for (int i = 0; i < noVertices; i++) {
-        ret[i].position = glm::vec3(vertices[i * stride],
-                                    vertices[i * stride + 1],
-                                    vertices[i * stride + 2]);
-        ret[i].texCoord = glm::vec2(vertices[i * stride + 3],
-                                    vertices[i * stride + 4]);
+        ret[i].position = glm::vec3(
+            vertices[i * stride],
+            vertices[i * stride + 1],
+            vertices[i * stride + 2]
+        );
+
+        ret[i].normal = glm::vec3(
+            vertices[i * stride + 3],
+            vertices[i * stride + 4],
+            vertices[i * stride + 5]
+        );
+
+        ret[i].texCoord = glm::vec2(
+            vertices[i * stride + 6],
+            vertices[i * stride + 7]
+        );
     }
 
     return ret;
@@ -60,7 +71,10 @@ void Mesh::setup() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
 
     glBindVertexArray(0);
 }
