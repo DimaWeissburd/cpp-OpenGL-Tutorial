@@ -37,6 +37,8 @@ add_executable(CPP_OpenGL_Tutorial
         src/rendering/Models/Cube.hpp
         src/rendering/Material.h
         src/rendering/Material.cpp
-        src/rendering/Models/Lamp.hpp)
+        src/rendering/Models/Lamp.hpp
+        src/rendering/Light.cpp
+        src/rendering/Light.h)
 
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
