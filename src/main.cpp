@@ -7,18 +7,18 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <../src/io/Joystick.h>
-#include <../src/io/Keyboard.h>
-#include <../src/io/Mouse.h>
-#include <../src/rendering/Camera.h>
-#include <../src/rendering/Light.h>
-#include <../src/rendering/Mesh.h>
-#include <../src/rendering/Model.h>
-#include <../src/rendering/Screen.h>
-#include <../src/rendering/Shader.h>
-#include <../src/rendering/Texture.h>
-#include <../src/rendering/Models/Cube.hpp>
-#include <../src/rendering/Models/Lamp.hpp>
+#include <io/Joystick.h>
+#include <io/Keyboard.h>
+#include <io/Mouse.h>
+#include <rendering/Camera.h>
+#include <rendering/Light.h>
+#include <rendering/Mesh.h>
+#include <rendering/Model.h>
+#include <rendering/Screen.h>
+#include <rendering/Shader.h>
+#include <rendering/Texture.h>
+#include <rendering/Models/Cube.hpp>
+#include <rendering/Models/Lamp.hpp>
 
 void processInput(double dt);
 
@@ -64,8 +64,8 @@ int main() {
 
     screen.setParameters();
 
-    Shader shader("../assets/object.vs", "../assets/object.fs");
-    Shader lampShader("../assets/object.vs", "../assets/lamp.fs");
+    Shader shader("assets/object.vs", "assets/object.fs");
+    Shader lampShader("assets/object.vs", "assets/lamp.fs");
 
     glm::vec3 cubePositions[] = {
         glm::vec3(0.0f,  0.0f,  0.0f),

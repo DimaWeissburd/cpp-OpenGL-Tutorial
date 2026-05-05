@@ -69,9 +69,9 @@ public:
             indices[i] = i;
         }
 
-        Texture crate("./../assets/Crate.png","material.diffuse");
+        Texture crate("assets/Crate.png","material.diffuse");
         crate.load();
-        Texture crateSpecular("./../assets/CrateSpecular.png","material.specular");
+        Texture crateSpecular("assets/CrateSpecular.png","material.specular");
         crate.load();
 
         meshes.push_back(Mesh(Vertex::genList(vertices, noVertices), indices, { crate, crateSpecular }));
