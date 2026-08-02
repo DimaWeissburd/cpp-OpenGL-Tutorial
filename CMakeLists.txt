@@ -55,6 +55,12 @@ add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD
     "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>/assets"
 )
 
+add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_SOURCE_DIR}/Linking/lib/assimp-vc145-mtd.dll"
+    "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>"
+)
+
 if(MSVC)
     set_target_properties(CPP_OpenGL_Tutorial PROPERTIES 
         LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"

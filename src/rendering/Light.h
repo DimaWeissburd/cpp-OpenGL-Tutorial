@@ -6,9 +6,9 @@
 
 struct DirectionalLight {
     glm::vec3 direction;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
     void render(Shader shader);
 };
 
@@ -17,9 +17,9 @@ struct PointLight {
     float k0;
     float k1;
     float k2;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
     void render(Shader shader, int index);
 };
 
@@ -31,9 +31,9 @@ struct SpotLight {
     float k0;
     float k1;
     float k2;
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
     void render(Shader shader, int index);
 };
 
