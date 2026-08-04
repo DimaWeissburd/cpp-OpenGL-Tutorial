@@ -19,14 +19,16 @@
 #include <rendering/Texture.h>
 #include <rendering/Models/Cube.hpp>
 #include <rendering/Models/Lamp.hpp>
+#include <rendering/Models/HandHeld.hpp>
 
 void processInput(double dt);
 
-Camera cameras[2] = {
-    Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
+Camera Camera::cameras[2] = {
+    Camera(glm::vec3(0.0f, 0.0f, 0.0f)),
     Camera(glm::vec3(10.0f, 10.0f, 10.0f))
 };
 int activeCamera = 0;
+int controlledCamera = 0;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -67,8 +69,14 @@ int main() {
     Shader shader("assets/object.vs", "assets/object.fs");
     Shader lampShader("assets/object.vs", "assets/lamp.fs");
 
-    Model m(glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(2.0f), true);
-    m.loadModel("assets/models/fox_in_a_cape/scene.gltf");
+    HandHeld magicStaff;
+    magicStaff.loadModel("assets/models/magic_staff/scene.gltf");
+    magicStaff.rotation.y = -90.0f;
+
+    Model fox;
+    fox.loadModel("assets/models/fox_in_a_cape/scene.gltf");
+    fox.rotation.x = -90.0f;
+    fox.rotation.z = -90.0f;
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
@@ -91,7 +99,7 @@ int main() {
     }
 
     SpotLight spotLight = {
-        cameras[activeCamera].cameraPosition, cameras[activeCamera].cameraFront,
+        Camera::cameras[activeCamera].cameraPosition, Camera::cameras[activeCamera].cameraFront,
         glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(20.0f)),
         1.0f, 0.07f, 0.032f,
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
@@ -114,7 +122,7 @@ int main() {
         screen.update();
 
         shader.activate();
-        shader.set3Float("viewPosition", cameras[activeCamera].cameraPosition);
+        shader.set3Float("viewPosition", Camera::cameras[activeCamera].cameraPosition);
 
         float rotationSpeed = 15.0f * (float)deltaTime;
         directionalLight.direction = glm::vec3(
@@ -128,8 +136,8 @@ int main() {
         shader.setInt("noPointLights", 4);
 
         if (flashLightOn) {
-            spotLight.position = cameras[activeCamera].cameraPosition;
-            spotLight.direction = cameras[activeCamera].cameraFront;
+            spotLight.position = Camera::cameras[activeCamera].cameraPosition;
+            spotLight.direction = Camera::cameras[activeCamera].cameraFront;
             spotLight.render(shader, 0);
             shader.setInt("noSpotLights", 1);
         } else {
@@ -139,14 +147,17 @@ int main() {
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
 
-        view = cameras[activeCamera].getViewMatrix();
+        view = Camera::cameras[activeCamera].getViewMatrix();
 
-        projection = glm::perspective(glm::radians(cameras[activeCamera].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(Camera::cameras[activeCamera].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        m.render(shader);
+        fox.rotation.z += 0.1f;
+
+        magicStaff.render(shader);
+        fox.render(shader);
 
         lampShader.activate();
         lampShader.setMat4("view", view);
@@ -158,7 +169,8 @@ int main() {
         screen.newFrame();
     }
 
-    m.cleanup();
+    magicStaff.cleanup();
+    fox.cleanup();
     for (int i = 0; i < 4; i++) {
         lamps[i]->cleanup();
         delete lamps[i];
@@ -177,36 +189,40 @@ void processInput(double dt) {
         activeCamera = activeCamera == 0 ? 1 : 0;
     }
 
+    if (Keyboard::keyPressed(GLFW_KEY_GRAVE_ACCENT)) {
+        controlledCamera = controlledCamera == 0 ? 1 : 0;
+    }
+
     if (Keyboard::keyPressed(GLFW_KEY_F)) {
         flashLightOn = !flashLightOn;
     }
 
     if (Keyboard::key(GLFW_KEY_W)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::FORWARD, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::FORWARD, dt);
     }
     if (Keyboard::key(GLFW_KEY_S)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::BACKWARD, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::BACKWARD, dt);
     }
     if (Keyboard::key(GLFW_KEY_D)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::RIGHT, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::RIGHT, dt);
     }
     if (Keyboard::key(GLFW_KEY_A)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::LEFT, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::LEFT, dt);
     }
     if (Keyboard::key(GLFW_KEY_SPACE)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::UP, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::UP, dt);
     }
     if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
-        cameras[activeCamera].updateCameraPosition(CameraDirection::DOWN, dt);
+        Camera::cameras[controlledCamera].updateCameraPosition(CameraDirection::DOWN, dt);
     }
 
     double dx = Mouse::getDX(), dy = Mouse::getDY();
     if (dx != 0 || dy != 0) {
-        cameras[activeCamera].updateCameraDirection(dx, dy);
+        Camera::cameras[controlledCamera].updateCameraDirection(dx, dy);
     }
 
     double scrollDy = Mouse::getScrollDY();
     if (scrollDy != 0) {
-        cameras[activeCamera].updateCameraZoom(scrollDy);
+        Camera::cameras[controlledCamera].updateCameraZoom(scrollDy);
     }
 }
