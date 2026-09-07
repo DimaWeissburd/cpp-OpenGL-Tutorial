@@ -1,14 +1,18 @@
 #include "Model.h"
 
 Model::Model(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, bool noTex)
-    : position(position), size(size), rotation(rotation), noTex(noTex) {}
+    : size(size), rotation(rotation), noTex(noTex) {
+    rb.position = position;
+}
 
 void Model::init() {}
 
-void Model::render(Shader shader, bool setModel) {
+void Model::render(Shader shader, float dt, bool setModel) {
+    rb.update(dt);
+
     if (setModel) {
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, position);
+        model = glm::translate(model, rb.position);
         model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));

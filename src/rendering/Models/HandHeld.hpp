@@ -5,12 +5,12 @@ class HandHeld : public Model {
 public:
 	HandHeld() : Model(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.001f), false) {}
 
-    void render(Shader shader, bool setModel = false) {
+    void render(Shader shader, float dt, bool setModel = false) {
         glm::mat4 model = glm::mat4(1.0f);
 
         // Translate to camera hand position
-        position = Camera::cameras[0].cameraPosition + glm::vec3(Camera::cameras[0].cameraFront * 1.5f) - glm::vec3(Camera::cameras[0].cameraUp * 0.75f);
-        model = glm::translate(model, position);
+        rb.position = Camera::cameras[0].cameraPosition + glm::vec3(Camera::cameras[0].cameraFront * 1.5f) - glm::vec3(Camera::cameras[0].cameraUp * 0.75f);
+        model = glm::translate(model, rb.position);
 
         // Align with camera (Pitch and Yaw)
         glm::vec2 front2d = glm::vec2(Camera::cameras[0].cameraFront.x, Camera::cameras[0].cameraFront.z);
@@ -34,6 +34,6 @@ public:
 
         shader.setMat4("model", model);
 
-        Model::render(shader, false);
+        Model::render(shader, dt, false);
     }
 };

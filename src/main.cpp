@@ -7,19 +7,20 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <io/Joystick.h>
-#include <io/Keyboard.h>
-#include <io/Mouse.h>
-#include <rendering/Camera.h>
-#include <rendering/Light.h>
-#include <rendering/Mesh.h>
-#include <rendering/Model.h>
-#include <rendering/Screen.h>
-#include <rendering/Shader.h>
-#include <rendering/Texture.h>
-#include <rendering/Models/Cube.hpp>
-#include <rendering/Models/Lamp.hpp>
-#include <rendering/Models/HandHeld.hpp>
+#include <IO/Joystick.h>
+#include <IO/Keyboard.h>
+#include <IO/Mouse.h>
+#include <Rendering/Camera.h>
+#include <Rendering/Light.h>
+#include <Rendering/Mesh.h>
+#include <Rendering/Model.h>
+#include <Rendering/Screen.h>
+#include <Rendering/Shader.h>
+#include <Rendering/Texture.h>
+#include <Rendering/Models/Cube.hpp>
+#include <Rendering/Models/HandHeld.hpp>
+#include <Rendering/Models/Lamp.hpp>
+#include <Rendering/Models/Sphere.hpp>
 
 void processInput(double dt);
 
@@ -69,14 +70,17 @@ int main() {
     Shader shader("assets/object.vs", "assets/object.fs");
     Shader lampShader("assets/object.vs", "assets/lamp.fs");
 
-    HandHeld magicStaff;
-    magicStaff.loadModel("assets/models/magic_staff/scene.gltf");
-    magicStaff.rotation.y = -90.0f;
+    //HandHeld magicStaff;
+    //magicStaff.loadModel("assets/models/magic_staff/scene.gltf");
+    //magicStaff.rotation.y = -90.0f;
 
-    Model fox;
-    fox.loadModel("assets/models/fox_in_a_cape/scene.gltf");
-    fox.rotation.x = -90.0f;
-    fox.rotation.z = -90.0f;
+    Sphere sphere(glm::vec3(0.0f), glm::vec3(0.25f));
+    sphere.init();
+
+    //Model fox;
+    //fox.loadModel("assets/models/fox_in_a_cape/scene.gltf");
+    //fox.rotation.x = -90.0f;
+    //fox.rotation.z = -90.0f;
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
@@ -154,23 +158,23 @@ int main() {
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
-        fox.rotation.z += 0.1f;
+        //fox.rotation.z += 0.1f;
 
-        magicStaff.render(shader);
-        fox.render(shader);
+        sphere.render(shader, deltaTime);
+        //fox.render(shader);
 
         lampShader.activate();
         lampShader.setMat4("view", view);
         lampShader.setMat4("projection", projection);
         for (int i = 0; i < 4; i++) {
-            lamps[i]->render(lampShader);
+            lamps[i]->render(lampShader, deltaTime);
         }
 
         screen.newFrame();
     }
 
-    magicStaff.cleanup();
-    fox.cleanup();
+    sphere.cleanup();
+    //fox.cleanup();
     for (int i = 0; i < 4; i++) {
         lamps[i]->cleanup();
         delete lamps[i];

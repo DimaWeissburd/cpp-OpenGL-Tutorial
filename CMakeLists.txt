@@ -12,30 +12,34 @@ add_executable(
     src/main.cpp
     src/glad.c
     src/stb.cpp
-    src/io/Joystick.cpp
-    src/io/Joystick.h
-    src/io/Mouse.cpp
-    src/io/Mouse.h
-    src/io/Keyboard.cpp
+    src/IO/Joystick.cpp
+    src/IO/Joystick.h
+    src/IO/Keyboard.cpp
     src/io/Keyboard.h
-    src/rendering/Shader.cpp
-    src/rendering/Shader.h
-    src/rendering/Camera.cpp
-    src/rendering/Camera.h
-    src/rendering/Screen.cpp
-    src/rendering/Screen.h
-    src/rendering/Texture.h
-    src/rendering/Texture.cpp
-    src/rendering/Mesh.h
-    src/rendering/Mesh.cpp
-    src/rendering/Model.h
-    src/rendering/Model.cpp
-    src/rendering/Models/Cube.hpp
-    src/rendering/Material.h
-    src/rendering/Material.cpp
-    src/rendering/Models/Lamp.hpp
-    src/rendering/Light.cpp
-    src/rendering/Light.h
+    src/IO/Mouse.cpp
+    src/IO/Mouse.h
+    src/Physics/RigidBody.cpp
+    src/Physics/RigidBody.h
+    src/Rendering/Models/Cube.hpp
+    src/Rendering/Models/HandHeld.hpp
+    src/Rendering/Models/Lamp.hpp
+    src/Rendering/Models/Sphere.hpp
+    src/Rendering/Camera.cpp
+    src/Rendering/Camera.h
+    src/Rendering/Light.cpp
+    src/Rendering/Light.h
+    src/Rendering/Material.h
+    src/Rendering/Material.cpp
+    src/Rendering/Mesh.h
+    src/Rendering/Mesh.cpp
+    src/Rendering/Model.h
+    src/Rendering/Model.cpp
+    src/Rendering/Screen.cpp
+    src/Rendering/Screen.h
+    src/Rendering/Shader.cpp
+    src/Rendering/Shader.h
+    src/Rendering/Texture.h
+    src/Rendering/Texture.cpp
 )
 
 target_include_directories(CPP_OpenGL_Tutorial PRIVATE

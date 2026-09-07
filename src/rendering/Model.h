@@ -10,10 +10,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include "Mesh.h"
+#include "../Physics/RigidBody.h"
 
 class Model {
 public:
-    glm::vec3 position;
+    RigidBody rb;
     glm::vec3 rotation;
     glm::vec3 size;
 
@@ -22,7 +23,7 @@ public:
     void init();
     void loadModel(std::string path);
 
-    void render(Shader shader, bool setModel = true);
+    void render(Shader shader, float dt, bool setModel = true);
 
     void cleanup();
 
