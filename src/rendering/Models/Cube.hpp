@@ -12,7 +12,7 @@ public:
     Material material;
 
     Cube(glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f))
-        : Model(position, size) {}
+        : Model(position, glm::vec3(0.0f), size) {}
 
     void init() {
         int noVertices = 36;

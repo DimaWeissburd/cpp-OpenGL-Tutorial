@@ -4,6 +4,40 @@ RigidBody::RigidBody(float mass, glm::vec3 position, glm::vec3 velocity, glm::ve
 	: mass(mass), position(position), velocity(velocity), acceleration(acceleration) {}
 
 void RigidBody::update(float dt) {
-	position = velocity * dt + 0.5f * acceleration * (dt * dt);
+	position += velocity * dt + 0.5f * acceleration * (dt * dt);
 	velocity += acceleration * dt;
+}
+
+void RigidBody::applyForce(glm::vec3 force) {
+	acceleration += force / mass;
+}
+
+void RigidBody::applyForce(glm::vec3 direction, float magnitude) {
+	applyForce(direction * magnitude);
+}
+
+void RigidBody::applyAcceleration(glm::vec3 a) {
+	acceleration += a;
+}
+
+void RigidBody::applyAcceleration(glm::vec3 direction, float magnitude) {
+	applyAcceleration(direction * magnitude);
+}
+
+void RigidBody::applyImpulse(glm::vec3 force, float dt) {
+	velocity += (force / mass) * dt;
+}
+
+void RigidBody::applyImpulse(glm::vec3 direction, float magnitude, float dt) {
+	applyForce(direction * magnitude, dt);
+}
+
+void RigidBody::transferEnergy(float joules) {
+	if (joules == 0) {
+		return;
+	}
+
+	float dV = sqrt(2 * abs(joules) / mass);
+
+	velocity += joules > 0 ? dV : -dV;
 }

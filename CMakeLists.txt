@@ -18,11 +18,14 @@ add_executable(
     src/io/Keyboard.h
     src/IO/Mouse.cpp
     src/IO/Mouse.h
+    src/Physics/Environment.cpp
+    src/Physics/Environment.h
     src/Physics/RigidBody.cpp
     src/Physics/RigidBody.h
     src/Rendering/Models/Cube.hpp
     src/Rendering/Models/HandHeld.hpp
     src/Rendering/Models/Lamp.hpp
+    src/Rendering/Models/ModelArray.hpp
     src/Rendering/Models/Sphere.hpp
     src/Rendering/Camera.cpp
     src/Rendering/Camera.h

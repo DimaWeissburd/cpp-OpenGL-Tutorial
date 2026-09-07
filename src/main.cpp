@@ -4,12 +4,15 @@
 #include <stb/stb_image.h>
 #include <fstream>
 #include <string>
+#include <vector>
+#include <stack>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <IO/Joystick.h>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
+#include <Physics/Environment.h>
 #include <Rendering/Camera.h>
 #include <Rendering/Light.h>
 #include <Rendering/Mesh.h>
@@ -31,7 +34,7 @@ Camera Camera::cameras[2] = {
 int activeCamera = 0;
 int controlledCamera = 0;
 
-float deltaTime = 0.0f;
+float dt = 0.0f;
 float lastFrame = 0.0f;
 
 bool flashLightOn = true;
@@ -42,6 +45,8 @@ unsigned int SCR_WIDTH = 800;
 unsigned int SCR_HEIGHT = 600;
 
 Screen screen;
+
+SphereArray launchObjects;
 
 int main() {
     glfwInit();
@@ -74,13 +79,12 @@ int main() {
     //magicStaff.loadModel("assets/models/magic_staff/scene.gltf");
     //magicStaff.rotation.y = -90.0f;
 
-    Sphere sphere(glm::vec3(0.0f), glm::vec3(0.25f));
-    sphere.init();
-
     //Model fox;
     //fox.loadModel("assets/models/fox_in_a_cape/scene.gltf");
     //fox.rotation.x = -90.0f;
     //fox.rotation.z = -90.0f;
+
+    launchObjects.init();
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
@@ -92,14 +96,21 @@ int main() {
         glm::vec3(0.0f,  0.0f, -3.0f)
     };
 
-    Lamp* lamps[4];
-    for (unsigned int i = 0; i < 4; i++) {
-        lamps[i] = new Lamp(glm::vec3(1.0f),
-            glm::vec4(0.05f, 0.05f, 0.05f, 1.0f), glm::vec4(0.8f, 0.8f, 0.8f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-            1.0f, 0.07f, 0.032f,
-            pointLightPositions[i], glm::vec3(0.25f));
+    glm::vec4 ambient = glm::vec4(0.05f, 0.05f, 0.05f, 1.0f);
+    glm::vec4 diffuse = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+    glm::vec4 specular = glm::vec4(1.0f);
+    float k0 = 1.0f;
+    float k1 = 0.09f;
+    float k2 = 0.032f;
 
-        lamps[i]->init();
+    LampArray lamps;
+    lamps.init();
+    for (unsigned int i = 0; i < 4; i++) {
+        lamps.lightInstances.push_back({
+            pointLightPositions[i],
+            k0, k1, k2,
+            ambient, diffuse, specular
+        });
     }
 
     SpotLight spotLight = {
@@ -118,26 +129,54 @@ int main() {
 
     while (!screen.shouldClose()) {
         double currentTime = glfwGetTime();
-        deltaTime = currentTime - lastFrame;
+        dt = currentTime - lastFrame;
         lastFrame = currentTime;
 
-        processInput(deltaTime);
+        processInput(dt);
 
         screen.update();
 
-        shader.activate();
         shader.set3Float("viewPosition", Camera::cameras[activeCamera].cameraPosition);
 
-        float rotationSpeed = 15.0f * (float)deltaTime;
+        float rotationSpeed = 15.0f * (float)dt;
         directionalLight.direction = glm::vec3(
             glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed), glm::vec3(1.0f, 0.0f, 0.0f)) *
             glm::vec4(directionalLight.direction, 1.0f));
         directionalLight.render(shader);
 
-        for (int i = 0; i < 4; i++) {
-            lamps[i]->pointLight.render(shader, i);
+        for (unsigned int i = 0; i < 4; i++) {
+            lamps.lightInstances[i].render(shader, i);
         }
         shader.setInt("noPointLights", 4);
+
+        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 projection = glm::mat4(1.0f);
+
+        view = Camera::cameras[activeCamera].getViewMatrix();
+
+        projection = glm::perspective(glm::radians(Camera::cameras[activeCamera].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+        std::stack<int> removeObjects;
+        for (int i = 0; i < launchObjects.instances.size(); i++) {
+            if (glm::length(Camera::cameras[0].cameraPosition - launchObjects.instances[i].position) > 50.0f) {
+                removeObjects.push(i);
+                continue;
+            }
+        }
+        for (int i = 0; i < removeObjects.size(); i++) {
+            launchObjects.instances.erase(launchObjects.instances.begin() + removeObjects.top());
+            removeObjects.pop();
+        }
+
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
+
+        lampShader.activate();
+        lampShader.setMat4("view", view);
+        lampShader.setMat4("projection", projection);
+        lamps.render(lampShader, dt);
+
+        shader.activate();
 
         if (flashLightOn) {
             spotLight.position = Camera::cameras[activeCamera].cameraPosition;
@@ -148,40 +187,30 @@ int main() {
             shader.setInt("noSpotLights", 0);
         }
 
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-
-        view = Camera::cameras[activeCamera].getViewMatrix();
-
-        projection = glm::perspective(glm::radians(Camera::cameras[activeCamera].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
+        if (launchObjects.instances.size() > 0) {
+            launchObjects.render(shader, dt);
+        }
 
         //fox.rotation.z += 0.1f;
-
-        sphere.render(shader, deltaTime);
         //fox.render(shader);
-
-        lampShader.activate();
-        lampShader.setMat4("view", view);
-        lampShader.setMat4("projection", projection);
-        for (int i = 0; i < 4; i++) {
-            lamps[i]->render(lampShader, deltaTime);
-        }
 
         screen.newFrame();
     }
 
-    sphere.cleanup();
     //fox.cleanup();
-    for (int i = 0; i < 4; i++) {
-        lamps[i]->cleanup();
-        delete lamps[i];
-    }
+    lamps.cleanup();
+
+    launchObjects.cleanup();
 
     glfwTerminate();
     return 0;
+}
+
+void launchItem(float dt) {
+    RigidBody rb(1.0f, Camera::cameras[0].cameraPosition);
+    rb.applyImpulse(Camera::cameras[0].cameraFront, 10000.0f, dt);
+    rb.applyAcceleration(Environment::gravitationalAcceleration);
+    launchObjects.instances.push_back(rb);
 }
 
 void processInput(double dt) {
@@ -228,5 +257,9 @@ void processInput(double dt) {
     double scrollDy = Mouse::getScrollDY();
     if (scrollDy != 0) {
         Camera::cameras[controlledCamera].updateCameraZoom(scrollDy);
+    }
+
+    if (Keyboard::keyPressed(GLFW_KEY_L)) {
+        launchItem(dt);
     }
 }

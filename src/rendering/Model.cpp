@@ -1,4 +1,5 @@
 #include "Model.h"
+#include "../Physics/Environment.h"
 
 Model::Model(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, bool noTex)
     : size(size), rotation(rotation), noTex(noTex) {
