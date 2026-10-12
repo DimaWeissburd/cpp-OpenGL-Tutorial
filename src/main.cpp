@@ -72,15 +72,16 @@ int main() {
 
     screen.setParameters();
 
-    Shader shader("assets/object.vs", "assets/object.fs");
-    Shader lampShader("assets/object.vs", "assets/lamp.fs");
+    Shader shader("Assets/Object.vs", "Assets/Object.fs");
+    Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
+    Shader launchShader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
 
     //HandHeld magicStaff;
-    //magicStaff.loadModel("assets/models/magic_staff/scene.gltf");
+    //magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
     //magicStaff.rotation.y = -90.0f;
 
     //Model fox;
-    //fox.loadModel("assets/models/fox_in_a_cape/scene.gltf");
+    //fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
     //fox.rotation.x = -90.0f;
     //fox.rotation.z = -90.0f;
 
@@ -188,7 +189,7 @@ int main() {
         }
 
         if (launchObjects.instances.size() > 0) {
-            launchObjects.render(shader, dt);
+            launchObjects.render(launchShader, dt);
         }
 
         //fox.rotation.z += 0.1f;
@@ -208,7 +209,7 @@ int main() {
 
 void launchItem(float dt) {
     RigidBody rb(1.0f, Camera::cameras[0].cameraPosition);
-    rb.applyImpulse(Camera::cameras[0].cameraFront, 10000.0f, dt);
+    rb.transferEnergy(100.0f, Camera::cameras[0].cameraFront);
     rb.applyAcceleration(Environment::gravitationalAcceleration);
     launchObjects.instances.push_back(rb);
 }

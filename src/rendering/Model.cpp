@@ -8,7 +8,7 @@ Model::Model(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, bool noTex)
 
 void Model::init() {}
 
-void Model::render(Shader shader, float dt, bool setModel) {
+void Model::render(Shader shader, float dt, bool setModel, bool doRender) {
     rb.update(dt);
 
     if (setModel) {
@@ -25,7 +25,7 @@ void Model::render(Shader shader, float dt, bool setModel) {
 
 
     for (Mesh mesh : meshes) {
-        mesh.render(shader);
+        mesh.render(shader, doRender);
     }
 }
 

@@ -6,9 +6,6 @@
 
 class Cube : public Model {
 public:
-    glm::vec3 position;
-    glm::vec3 size;
-
     Material material;
 
     Cube(glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f))

@@ -39,7 +39,7 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, aiCo
     setup();
 }
 
-void Mesh::render(Shader shader) {
+void Mesh::render(Shader shader, bool doRender) {
     if (noTex) {
         shader.set4Float("material.diffuse", diffuse);
         shader.set4Float("material.specular", specular);
@@ -65,11 +65,12 @@ void Mesh::render(Shader shader) {
         }
     }
 
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-
-    glActiveTexture(GL_TEXTURE0);
+    if (doRender) {
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        glActiveTexture(GL_TEXTURE0);
+    }
 }
 
 void Mesh::cleanup() {
