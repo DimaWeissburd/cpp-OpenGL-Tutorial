@@ -22,6 +22,7 @@ add_executable(
     src/Physics/Environment.h
     src/Physics/RigidBody.cpp
     src/Physics/RigidBody.h
+    src/Rendering/Models/Box.hpp
     src/Rendering/Models/Cube.hpp
     src/Rendering/Models/HandHeld.hpp
     src/Rendering/Models/Lamp.hpp

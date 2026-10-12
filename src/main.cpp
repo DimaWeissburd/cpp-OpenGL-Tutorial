@@ -20,6 +20,7 @@
 #include <Rendering/Screen.h>
 #include <Rendering/Shader.h>
 #include <Rendering/Texture.h>
+#include <Rendering/Models/Box.hpp>
 #include <Rendering/Models/Cube.hpp>
 #include <Rendering/Models/HandHeld.hpp>
 #include <Rendering/Models/Lamp.hpp>
@@ -36,6 +37,8 @@ int controlledCamera = 0;
 
 float dt = 0.0f;
 float lastFrame = 0.0f;
+
+Box box;
 
 bool flashLightOn = true;
 
@@ -75,6 +78,7 @@ int main() {
     Shader shader("Assets/Object.vs", "Assets/Object.fs");
     Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
     Shader launchShader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
+    Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
 
     //HandHeld magicStaff;
     //magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
@@ -86,6 +90,7 @@ int main() {
     //fox.rotation.z = -90.0f;
 
     launchObjects.init();
+    box.init();
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
@@ -134,43 +139,32 @@ int main() {
         lastFrame = currentTime;
 
         processInput(dt);
-
         screen.update();
 
-        shader.set3Float("viewPosition", Camera::cameras[activeCamera].cameraPosition);
+        glm::mat4 view = Camera::cameras[activeCamera].getViewMatrix();
+        glm::mat4 projection = glm::perspective(
+            glm::radians(Camera::cameras[activeCamera].getZoom()),
+            (float)SCR_WIDTH / (float)SCR_HEIGHT,
+            0.1f, 100.0f
+        );
+        glm::vec3 viewPos = Camera::cameras[activeCamera].cameraPosition;
 
         float rotationSpeed = 15.0f * (float)dt;
         directionalLight.direction = glm::vec3(
             glm::rotate(glm::mat4(1.0f), glm::radians(rotationSpeed), glm::vec3(1.0f, 0.0f, 0.0f)) *
-            glm::vec4(directionalLight.direction, 1.0f));
-        directionalLight.render(shader);
+            glm::vec4(directionalLight.direction, 1.0f)
+        );
 
-        for (unsigned int i = 0; i < 4; i++) {
-            lamps.lightInstances[i].render(shader, i);
+        if (flashLightOn) {
+            spotLight.position = viewPos;
+            spotLight.direction = Camera::cameras[activeCamera].cameraFront;
         }
-        shader.setInt("noPointLights", 4);
 
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-
-        view = Camera::cameras[activeCamera].getViewMatrix();
-
-        projection = glm::perspective(glm::radians(Camera::cameras[activeCamera].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-        std::stack<int> removeObjects;
-        for (int i = 0; i < launchObjects.instances.size(); i++) {
+        for (int i = (int)launchObjects.instances.size() - 1; i >= 0; i--) {
             if (glm::length(Camera::cameras[0].cameraPosition - launchObjects.instances[i].position) > 50.0f) {
-                removeObjects.push(i);
-                continue;
+                launchObjects.instances.erase(launchObjects.instances.begin() + i);
             }
         }
-        for (int i = 0; i < removeObjects.size(); i++) {
-            launchObjects.instances.erase(launchObjects.instances.begin() + removeObjects.top());
-            removeObjects.pop();
-        }
-
-        shader.setMat4("view", view);
-        shader.setMat4("projection", projection);
 
         lampShader.activate();
         lampShader.setMat4("view", view);
@@ -178,29 +172,59 @@ int main() {
         lamps.render(lampShader, dt);
 
         shader.activate();
-
+        shader.setMat4("view", view);
+        shader.setMat4("projection", projection);
+        shader.set3Float("viewPosition", viewPos);
+        directionalLight.render(shader);
+        for (unsigned int i = 0; i < 4; i++) {
+            lamps.lightInstances[i].render(shader, i);
+        }
+        shader.setInt("noPointLights", 4);
         if (flashLightOn) {
-            spotLight.position = Camera::cameras[activeCamera].cameraPosition;
-            spotLight.direction = Camera::cameras[activeCamera].cameraFront;
             spotLight.render(shader, 0);
             shader.setInt("noSpotLights", 1);
-        } else {
+        }
+        else {
             shader.setInt("noSpotLights", 0);
         }
+        // fox.render(shader);
 
-        if (launchObjects.instances.size() > 0) {
+        if (!launchObjects.instances.empty()) {
+            launchShader.activate();
+            launchShader.setMat4("view", view);
+            launchShader.setMat4("projection", projection);
+            launchShader.set3Float("viewPosition", viewPos);
+
+            directionalLight.render(launchShader);
+            for (unsigned int i = 0; i < 4; i++) {
+                lamps.lightInstances[i].render(launchShader, i);
+            }
+            launchShader.setInt("noPointLights", 4);
+
+            if (flashLightOn) {
+                spotLight.render(launchShader, 0);
+                launchShader.setInt("noSpotLights", 1);
+            }
+            else {
+                launchShader.setInt("noSpotLights", 0);
+            }
+
             launchObjects.render(launchShader, dt);
         }
 
-        //fox.rotation.z += 0.1f;
-        //fox.render(shader);
+        if (box.offsets.size() > 0) {
+            boxShader.activate();
+            boxShader.setMat4("view", view);
+            boxShader.setMat4("projection", projection);
+            box.render(boxShader);
+        }
 
         screen.newFrame();
     }
 
     //fox.cleanup();
     lamps.cleanup();
-
+    box.cleanup();
     launchObjects.cleanup();
 
     glfwTerminate();
@@ -260,7 +284,12 @@ void processInput(double dt) {
         Camera::cameras[controlledCamera].updateCameraZoom(scrollDy);
     }
 
-    if (Keyboard::keyPressed(GLFW_KEY_L)) {
+    if (Keyboard::keyPressed(GLFW_KEY_E)) {
         launchItem(dt);
+    }
+
+    if (Keyboard::keyPressed(GLFW_KEY_Q)) {
+        box.offsets.push_back(glm::vec3(box.offsets.size() * 1.0f));
+        box.sizes.push_back(glm::vec3(box.sizes.size() * 0.5f));
     }
 }

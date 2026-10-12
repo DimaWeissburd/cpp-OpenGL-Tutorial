@@ -43,7 +43,7 @@ public:
 		}
 	}
 
-	void render(Shader shader, float dt, bool setLists = true, bool doRender = true) {
+	void render(Shader shader, float dt, bool setLists = true) {
 		if (setLists) {
 			positions.clear();
 			sizes.clear();
@@ -61,7 +61,7 @@ public:
 
 		int size = std::min(UPPER_BOUND, (int)positions.size());
 
-		if (positions.size() != 0) {
+		if (size != 0) {
 			glBindBuffer(GL_ARRAY_BUFFER, posVBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, size * 3 * sizeof(float), &positions[0]);
 

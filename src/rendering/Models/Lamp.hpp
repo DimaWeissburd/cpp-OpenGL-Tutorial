@@ -51,7 +51,7 @@ public:
         ModelArray::init();
     }
 
-    void render(Shader shader, float dt, bool setModel = true, bool doRender = true) {
+    void render(Shader shader, float dt, bool setModel = true) {
         positions.clear();
         sizes.clear();
 
@@ -60,7 +60,7 @@ public:
             sizes.push_back(model.size);
         }
 
-        ModelArray::render(shader, dt, setModel, doRender);
+        ModelArray::render(shader, dt, false);
     }
 };
 
