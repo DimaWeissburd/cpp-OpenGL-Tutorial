@@ -12,6 +12,8 @@ add_executable(
     src/main.cpp
     src/glad.c
     src/stb.cpp
+    src/Algorithms/Bounds.cpp
+    src/Algorithms/Bounds.h
     src/IO/Joystick.cpp
     src/IO/Joystick.h
     src/IO/Keyboard.cpp
@@ -44,7 +46,7 @@ add_executable(
     src/Rendering/Shader.h
     src/Rendering/Texture.h
     src/Rendering/Texture.cpp
-)
+ "src/Algorithms/Bounds.h" "src/Algorithms/Bounds.cpp")
 
 target_include_directories(CPP_OpenGL_Tutorial PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Linking/include"

@@ -1,14 +1,14 @@
 #include "Model.h"
 #include "../Physics/Environment.h"
 
-Model::Model(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, bool noTex)
-    : size(size), rotation(rotation), noTex(noTex) {
+Model::Model(BoundTypes boundType, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, bool noTex)
+    : boundType(boundType), size(size), rotation(rotation), noTex(noTex) {
     rb.position = position;
 }
 
 void Model::init() {}
 
-void Model::render(Shader shader, float dt, bool setModel, bool doRender) {
+void Model::render(Shader shader, float dt, Box* box, bool setModel, bool doRender) {
     rb.update(dt);
 
     if (setModel) {
@@ -25,7 +25,7 @@ void Model::render(Shader shader, float dt, bool setModel, bool doRender) {
 
 
     for (Mesh mesh : meshes) {
-        mesh.render(shader, doRender);
+        mesh.render(shader, rb.position, size, box, doRender);
     }
 }
 
@@ -64,6 +64,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
 
+    BoundingRegion br(boundType);
+    glm::vec3 min((float)(~0));
+    glm::vec3 max(-(float)(~0));
+
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex;
 
@@ -72,6 +76,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             mesh->mVertices[i].y,
             mesh->mVertices[i].z
         );
+
+        for (int j = 0; j < 3; j++) {
+            if (vertex.position[j] < min[j]) min[j] = vertex.position[j];
+            if (vertex.position[j] > max[j]) max[j] = vertex.position[j];
+        }
 
         vertex.normal = glm::vec3(
             mesh->mNormals[i].x,
@@ -91,6 +100,24 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         vertices.push_back(vertex);
     }
 
+    if (boundType == BoundTypes::AABB) {
+        br.min = min;
+        br.max = max;
+    } else {
+        br.center = BoundingRegion(min, max).calculateCenter();
+        float maxRadiusSquared = 0.0f;
+        for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+            float radiusSquared = 0.0f;
+            for (int j = 0; j < 3; j++) {
+                radiusSquared += (vertices[i].position[j] - br.center[j]) * (vertices[i].position[j] - br.center[j]);
+            }
+            if (radiusSquared > maxRadiusSquared) {
+                maxRadiusSquared = radiusSquared;
+            }
+        }
+        br.radius = sqrt(maxRadiusSquared);
+    }
+
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
@@ -107,7 +134,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         aiColor4D spec(1.0f);
         aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &spec);
 
-        return Mesh(vertices, indices, diff, spec);
+        return Mesh(br, vertices, indices, diff, spec);
     }
 
     std::vector<Texture> diffuseMaps = loadTextures(material, aiTextureType_DIFFUSE);
@@ -115,7 +142,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<Texture> specularMaps = loadTextures(material, aiTextureType_SPECULAR);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
-    return Mesh(vertices, indices, textures);
+    return Mesh(br, vertices, indices, textures);
 }
 
 std::vector<Texture> Model::loadTextures(aiMaterial* material, aiTextureType type) {

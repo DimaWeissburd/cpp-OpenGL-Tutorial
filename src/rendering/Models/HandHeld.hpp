@@ -3,9 +3,9 @@
 
 class HandHeld : public Model {
 public:
-	HandHeld() : Model(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.001f), false) {}
+	HandHeld() : Model(BoundTypes::AABB, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.001f), false) {}
 
-    void render(Shader shader, float dt, bool setModel = false) {
+    void render(Shader shader, float dt, Box *box, bool setModel = false) {
         glm::mat4 model = glm::mat4(1.0f);
 
         // Translate to camera hand position
@@ -34,6 +34,6 @@ public:
 
         shader.setMat4("model", model);
 
-        Model::render(shader, dt, false);
+        Model::render(shader, dt, box, false);
     }
 };

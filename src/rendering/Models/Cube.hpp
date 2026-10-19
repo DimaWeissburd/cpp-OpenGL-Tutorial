@@ -9,7 +9,7 @@ public:
     Material material;
 
     Cube(glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f))
-        : Model(position, glm::vec3(0.0f), size) {}
+        : Model(BoundTypes::AABB, position, glm::vec3(0.0f), size) {}
 
     void init() {
         int noVertices = 36;
@@ -64,7 +64,9 @@ public:
             indices[i] = i;
         }
 
-        meshes.push_back(Mesh(Vertex::genList(vertices, noVertices), indices));
+        BoundingRegion br(glm::vec3(-0.5f), glm::vec3(0.5f));
+
+        meshes.push_back(Mesh(br, Vertex::genList(vertices, noVertices), indices));
     }
 };
 

@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
+#include "../../Algorithms/Bounds.h"
 #include "../Shader.h"
 
 #define UPPER_BOUND 100
@@ -108,6 +109,11 @@ public:
         glBindVertexArray(VAO);
         glDrawElementsInstanced(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0, size);
         glBindVertexArray(0);
+    }
+
+    void addInstance(BoundingRegion br, glm::vec3 position, glm::vec3 size) {
+        offsets.push_back(br.calculateCenter() * size + position);
+        sizes.push_back(br.calculateDimentions() * size);
     }
 
     void cleanup() {

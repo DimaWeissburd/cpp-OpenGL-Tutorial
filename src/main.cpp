@@ -38,8 +38,6 @@ int controlledCamera = 0;
 float dt = 0.0f;
 float lastFrame = 0.0f;
 
-Box box;
-
 bool flashLightOn = true;
 
 Joystick joystick(0);
@@ -90,6 +88,8 @@ int main() {
     fox.rotation.z = -90.0f;
 
     launchObjects.init();
+
+    Box box;
     box.init();
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
@@ -134,6 +134,9 @@ int main() {
     }
 
     while (!screen.shouldClose()) {
+        box.offsets.clear();
+        box.sizes.clear();
+
         double currentTime = glfwGetTime();
         dt = currentTime - lastFrame;
         lastFrame = currentTime;
@@ -169,7 +172,7 @@ int main() {
         lampShader.activate();
         lampShader.setMat4("view", view);
         lampShader.setMat4("projection", projection);
-        lamps.render(lampShader, dt);
+        lamps.render(lampShader, dt, &box);
 
         shader.activate();
         shader.setMat4("view", view);
@@ -187,7 +190,7 @@ int main() {
         else {
             shader.setInt("noSpotLights", 0);
         }
-        fox.render(shader, dt);
+        fox.render(shader, dt, &box);
 
         if (!launchObjects.instances.empty()) {
             launchShader.activate();
@@ -209,7 +212,7 @@ int main() {
                 launchShader.setInt("noSpotLights", 0);
             }
 
-            launchObjects.render(launchShader, dt);
+            launchObjects.render(launchShader, dt, &box);
         }
 
         if (box.offsets.size() > 0) {
@@ -286,10 +289,5 @@ void processInput(double dt) {
 
     if (Keyboard::keyPressed(GLFW_KEY_E)) {
         launchItem(dt);
-    }
-
-    if (Keyboard::keyPressed(GLFW_KEY_Q)) {
-        box.offsets.push_back(glm::vec3(box.offsets.size() * 1.0f));
-        box.sizes.push_back(glm::vec3(box.sizes.size() * 0.5f));
     }
 }

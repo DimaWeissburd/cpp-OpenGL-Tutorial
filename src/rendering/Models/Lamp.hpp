@@ -26,9 +26,9 @@ public:
            pointLight({ position, k0, k1, k2, ambient, diffuse, specular }),
            Cube(position, size) {}
 
-    void render(Shader shader, float dt, bool setModel = true, bool doRender = true) {
+    void render(Shader shader, float dt, Box *box, bool setModel = true, bool doRender = true) {
         shader.set3Float("lightColor", lightColor);
-        Cube::render(shader, dt);
+        Cube::render(shader, dt, box, setModel, doRender);
     }
 };
 
@@ -51,7 +51,7 @@ public:
         ModelArray::init();
     }
 
-    void render(Shader shader, float dt, bool setModel = true) {
+    void render(Shader shader, float dt, Box *box) {
         positions.clear();
         sizes.clear();
 
@@ -60,7 +60,7 @@ public:
             sizes.push_back(model.size);
         }
 
-        ModelArray::render(shader, dt, false);
+        ModelArray::render(shader, dt, box, false);
     }
 };
 

@@ -10,7 +10,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include "Mesh.h"
+#include "Models/Box.hpp"
 #include "../Physics/RigidBody.h"
+#include "../Algorithms/Bounds.h"
 
 class Model {
 public:
@@ -18,14 +20,16 @@ public:
     glm::vec3 rotation;
     glm::vec3 size;
 
+    BoundTypes boundType;
+
     std::vector<Mesh> meshes;
 
-    Model(glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), bool noTex = false);
+    Model(BoundTypes boundType = BoundTypes::AABB, glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), bool noTex = false);
 
     void init();
     void loadModel(std::string path);
 
-    void render(Shader shader, float dt, bool setModel = true, bool doRender = true);
+    void render(Shader shader, float dt, Box *box, bool setModel = true, bool doRender = true);
 
     void cleanup();
 
