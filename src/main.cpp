@@ -80,14 +80,14 @@ int main() {
     Shader launchShader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
     Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
 
-    //HandHeld magicStaff;
-    //magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
-    //magicStaff.rotation.y = -90.0f;
+    HandHeld magicStaff;
+    magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
+    magicStaff.rotation.y = -90.0f;
 
-    //Model fox;
-    //fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
-    //fox.rotation.x = -90.0f;
-    //fox.rotation.z = -90.0f;
+    Model fox;
+    fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
+    fox.rotation.x = -90.0f;
+    fox.rotation.z = -90.0f;
 
     launchObjects.init();
     box.init();
@@ -187,7 +187,7 @@ int main() {
         else {
             shader.setInt("noSpotLights", 0);
         }
-        // fox.render(shader);
+        fox.render(shader, dt);
 
         if (!launchObjects.instances.empty()) {
             launchShader.activate();
@@ -222,7 +222,7 @@ int main() {
         screen.newFrame();
     }
 
-    //fox.cleanup();
+    fox.cleanup();
     lamps.cleanup();
     box.cleanup();
     launchObjects.cleanup();
