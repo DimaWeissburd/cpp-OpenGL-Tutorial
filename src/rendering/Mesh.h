@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include "Shader.h"
 #include "Texture.h"
+#include "GLMemory.hpp"
 #include "Models/Box.hpp"
 #include "../Algorithms/Bounds.h"
 
@@ -25,7 +26,7 @@ public:
 
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    unsigned int VAO;
+    ArrayObject VAO;
 
     std::vector<Texture> textures;
     aiColor4D diffuse;

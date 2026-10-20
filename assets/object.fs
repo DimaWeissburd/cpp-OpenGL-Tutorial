@@ -28,7 +28,7 @@ struct PointLight {
 	vec4 specular;
 };
 uniform PointLight pointLights[MAX_POINT_LIGHTS];
-uniform int noPointLights;
+uniform int nPointLights;
 
 #define MAX_SPOT_LIGHTS 5
 struct SpotLight {
@@ -44,7 +44,7 @@ struct SpotLight {
     vec4 specular;
 };
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
-uniform int noSpotLights;
+uniform int nSpotLights;
 
 out vec4 FragColor;
 
@@ -78,10 +78,10 @@ void main() {
 
     vec4 result;
     result = calcDirectionalLight(norm, viewDirection, diffuseMap, specularMap);
-    for (int i = 0; i < noPointLights; i++) {
+    for (int i = 0; i < nPointLights; i++) {
         result += calcPointLight(i, norm, viewDirection, diffuseMap, specularMap);
     }
-    for (int i = 0; i < noSpotLights; i++) {
+    for (int i = 0; i < nSpotLights; i++) {
         result += calcSpotLight(i, norm, viewDirection, diffuseMap, specularMap);
     }
 	FragColor = result;

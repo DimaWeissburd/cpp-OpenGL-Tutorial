@@ -10,10 +10,13 @@ add_compile_definitions(GLEW_STATIC)
 add_executable(
     CPP_OpenGL_Tutorial
     src/main.cpp
+    src/Scene.cpp
+    src/Scene.h
     src/glad.c
     src/stb.cpp
     src/Algorithms/Bounds.cpp
     src/Algorithms/Bounds.h
+    src/Algorithms/States.hpp
     src/IO/Joystick.cpp
     src/IO/Joystick.h
     src/IO/Keyboard.cpp
@@ -32,6 +35,7 @@ add_executable(
     src/Rendering/Models/Sphere.hpp
     src/Rendering/Camera.cpp
     src/Rendering/Camera.h
+    src/Rendering/GLMemory.hpp
     src/Rendering/Light.cpp
     src/Rendering/Light.h
     src/Rendering/Material.h
@@ -40,13 +44,11 @@ add_executable(
     src/Rendering/Mesh.cpp
     src/Rendering/Model.h
     src/Rendering/Model.cpp
-    src/Rendering/Screen.cpp
-    src/Rendering/Screen.h
     src/Rendering/Shader.cpp
     src/Rendering/Shader.h
     src/Rendering/Texture.h
     src/Rendering/Texture.cpp
- "src/Algorithms/Bounds.h" "src/Algorithms/Bounds.cpp")
+)
 
 target_include_directories(CPP_OpenGL_Tutorial PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Linking/include"

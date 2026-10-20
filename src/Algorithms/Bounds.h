@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-enum class BoundTypes {
+enum class BoundTypes : unsigned char {
 	AABB = 0x00,
 	SPHERE = 0x01
 };
