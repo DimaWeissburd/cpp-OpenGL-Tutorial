@@ -98,7 +98,7 @@ public:
 
     void addInstance(BoundingRegion br, glm::vec3 position, glm::vec3 size) {
         positions.push_back(br.calculateCenter() * size + position);
-        sizes.push_back(br.calculateDimentions() * size);
+        sizes.push_back(br.calculateDimensions() * size);
     }
 
     void cleanup() {

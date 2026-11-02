@@ -9,11 +9,22 @@ BoundingRegion::BoundingRegion(glm::vec3 center, float radius)
 BoundingRegion::BoundingRegion(glm::vec3 min, glm::vec3 max)
 	:type(BoundTypes::AABB), min(min), max(max) {}
 
+bool BoundingRegion::operator==(const BoundingRegion& br) const {
+	if (type != br.type) return false;
+
+	if (type == BoundTypes::AABB) {
+		return min == br.min && max == br.max;
+	}
+	else {
+		return center == br.center && radius == br.radius;
+	}
+}
+
 glm::vec3 BoundingRegion::calculateCenter() {
 	return (type == BoundTypes::AABB) ? (min + max) / 2.0f : center;
 }
 
-glm::vec3 BoundingRegion::calculateDimentions() {
+glm::vec3 BoundingRegion::calculateDimensions() {
 	return (type == BoundTypes::AABB) ? (max - min) : glm::vec3(2.0f * radius);
 }
 
@@ -52,8 +63,8 @@ bool BoundingRegion::containsRegion(BoundingRegion br) {
 
 bool BoundingRegion::intersectsWith(BoundingRegion br) {
 	if (type == BoundTypes::AABB && br.type == BoundTypes::AABB) {
-		glm::vec3 rad = calculateDimentions() / 2.0f;
-		glm::vec3 radBr = br.calculateDimentions() / 2.0f;
+		glm::vec3 rad = calculateDimensions() / 2.0f;
+		glm::vec3 radBr = br.calculateDimensions() / 2.0f;
 		glm::vec3 center = calculateCenter();
 		glm::vec3 centerBr = br.calculateCenter();
 		glm::vec3 dist = abs(center - centerBr);
