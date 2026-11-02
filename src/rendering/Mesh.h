@@ -32,10 +32,13 @@ public:
     aiColor4D diffuse;
     aiColor4D specular;
 
-    Mesh(BoundingRegion br, std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures = {});
-    Mesh(BoundingRegion br, std::vector<Vertex> vertices, std::vector<unsigned int> indices, aiColor4D diffuse, aiColor4D specular);
+    Mesh();
+    Mesh(BoundingRegion br, std::vector<Texture> textures = {});
+    Mesh(BoundingRegion br, aiColor4D diff, aiColor4D spec);
 
-    void render(Shader shader, glm::vec3 position, glm::vec3 size, Box *box, bool doRender = true);
+    void loadData(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
+
+    void render(Shader shader, unsigned int noInstances);
 
     void cleanup();
 

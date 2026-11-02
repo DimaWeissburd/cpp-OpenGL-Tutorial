@@ -2,31 +2,55 @@
 #define STATES_HPP
 
 namespace States {
-	template<typename T>
-	bool isActive(T* states, int target) {
-		return (*states & (T(1) << target)) != 0;
-	}
+    template<typename T>
+    bool isIndexActive(T* states, int target) {
+        return (*states & (1 << target)) == (1 << target);
+    }
 
-	template<typename T>
-	void activate(T* states, int target) {
-		*states |= T(1) << target;
-	}
+    template<typename T>
+    void activateIndex(T* states, int target) {
+        *states |= 1 << target;
+    }
 
-	template<typename T>
-	void uniquelyActivate(T* states, int target) {
-		activate<T>(states, target);
-		*states &= T(1) << target;
-	}
+    template<typename T>
+    void uniquelyActivateIndex(T* states, int target) {
+        *states &= 1 << target;
+    }
 
-	template<typename T>
-	void deactivate(T* states, int target) {
-		*states &= ~(T(1) << target);
-	}
+    template<typename T>
+    void deactivateIndex(T* states, int target) {
+        *states &= ~(1 << target);
+    }
 
-	template<typename T>
-	void toggle(T* states, int target) {
-		*states ^= T(1) << target;
-	}
+    template<typename T>
+    void toggleIndex(T* states, int target) {
+        *states ^= 1 << target;
+    }
+
+    template<typename T>
+    bool isActive(T* states, T state) {
+        return (*states & state) == state;
+    }
+
+    template<typename T>
+    void activate(T* states, T state) {
+        *states |= state;
+    }
+
+    template<typename T>
+    void uniquelyActivate(T* states, T state) {
+        *states &= state;
+    }
+
+    template<typename T>
+    void deactivate(T* states, T state) {
+        *states &= ~state;
+    }
+
+    template<typename T>
+    void toggle(T* states, T state) {
+        *states ^= state;
+    }
 }
 
 #endif

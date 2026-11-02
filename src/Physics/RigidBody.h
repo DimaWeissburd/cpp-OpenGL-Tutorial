@@ -2,6 +2,7 @@
 #define RIGIDBODY_H
 
 #include <glm/glm.hpp>
+#include<string>
 
 class RigidBody {
 public:
@@ -9,8 +10,13 @@ public:
 	glm::vec3 position;
 	glm::vec3 velocity;
 	glm::vec3 acceleration;
+	glm::vec3 size;
+	std::string* modelId;
+	std::string instanceId;
 
-	RigidBody(float mass = 1.0f, glm::vec3 position = glm::vec3(0.0f), glm::vec3 velocity = glm::vec3(0.0f), glm::vec3 acceleration = glm::vec3(0.0f));
+	RigidBody();
+
+	RigidBody(std::string* modelId, glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f, glm::vec3 position = glm::vec3(0.0f));
 
 	void update(float dt);
 

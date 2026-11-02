@@ -33,7 +33,6 @@ add_executable(
     src/Rendering/Models/Cube.hpp
     src/Rendering/Models/HandHeld.hpp
     src/Rendering/Models/Lamp.hpp
-    src/Rendering/Models/ModelArray.hpp
     src/Rendering/Models/Sphere.hpp
     src/Rendering/Camera.cpp
     src/Rendering/Camera.h

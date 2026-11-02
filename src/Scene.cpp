@@ -3,6 +3,18 @@
 unsigned int Scene::screenWidth = 0;
 unsigned int Scene::screenHeight = 0;
 
+std::string Scene::generateId() {
+	for (int i = currentId.length() - 1; i >= 0; i--) {
+		if ((int)currentId[i] != (int)'z') {
+			currentId[i] = (char)(((int)currentId[i]) + 1);
+			break;
+		} else {
+			currentId[i] = 'a';
+		}
+	}
+	return currentId;
+}
+
 void Scene::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 	Scene::screenWidth = width;
@@ -10,11 +22,12 @@ void Scene::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 }
 
 Scene::Scene() 
-:activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false) {}
+: activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false), currentId("aaaaaaaa") {}
 
 Scene::Scene(int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight)
 : glfwVersionMajor(glfwVersionMajor), glfwVersionMinor(glfwVersionMinor), title(title), activeCamera(-1),
-  activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false) {
+  activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
+  currentId("aaaaaaaa") {
 	Scene::screenWidth = screenWidth;
 	Scene::screenHeight = screenHeight;
 	setWindowColor(0.1f, 0.15f, 0.15f, 1.0f);
@@ -110,7 +123,7 @@ void Scene::newFrame() {
 	glfwPollEvents();
 }
 
-void Scene::render(Shader shader, bool applyLighting) {
+void Scene::renderShader(Shader shader, bool applyLighting) {
 	shader.activate();
 
 	shader.setMat4("view", view);
@@ -142,7 +155,15 @@ void Scene::render(Shader shader, bool applyLighting) {
 	}
 }
 
+void Scene::renderInstances(std::string modelId, Shader shader, float dt) {
+	models[modelId]->render(shader, dt, this);
+}
+
 void Scene::cleanup() {
+	for (auto& pair : models) {
+		pair.second->cleanup();
+	}
+
 	glfwTerminate();
 }
 
@@ -163,4 +184,40 @@ void Scene::setWindowColor(float r, float g, float b, float a) {
 	backgroundColor[1] = g;
 	backgroundColor[2] = b;
 	backgroundColor[3] = a;
+}
+
+void Scene::registerModel(Model* model) {
+	models[model->id] = model;
+}
+
+std::string Scene::generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position) {
+	unsigned int idx = models[modelId]->generateInstance(size, mass, position);
+	if (idx != -1) {
+		std::string id = generateId();
+		models[modelId]->instances[idx].instanceId = id;
+		instances[id] = { modelId, idx };
+		return id;
+	}
+	return "";
+}
+
+void Scene::initInstances() {
+	for (auto& pair : models) {
+		pair.second->initInstances();
+	}
+}
+
+void Scene::loadModels() {
+	for (auto& pair : models) {
+		pair.second->init();
+	}
+}
+
+void Scene::removeInstances(std::string instanceId) {
+	std::string targetModel = instances[instanceId].first;
+	unsigned int targetIdx = instances[instanceId].second;
+
+	models[targetModel]->removeInstance(targetIdx);
+
+	instances.erase(instanceId);
 }

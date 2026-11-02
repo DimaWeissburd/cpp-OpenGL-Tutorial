@@ -4,9 +4,9 @@
 
 class HandHeld : public Model {
 public:
-	HandHeld() : Model(BoundTypes::AABB, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.001f), false) {}
+	HandHeld(unsigned int maxNoInstances) : Model("HandHeld", BoundTypes::AABB, maxNoInstances, CONST_INSTANCES | NO_TEX) {}
 
-    void render(Shader shader, float dt, Box* box, Scene* scene, bool setModel = false) {
+    void render(Shader shader, float dt, Scene* scene, bool setModel = false) {
         glm::mat4 model = glm::mat4(1.0f);
 
         // Translate to camera hand position
@@ -35,10 +35,7 @@ public:
 
         shader.setMat4("model", model);
 
-        size_t count = box->positions.size();
-        Model::render(shader, dt, box, false);
-        box->positions.resize(count); // Remove the unadjusted bounding box
-        box->sizes.resize(count);
+        Model::render(shader, dt, scene, false);
 
         // Adjust bounding box to rotation
         glm::vec3 localMin(FLT_MAX), localMax(-FLT_MAX);
@@ -61,7 +58,5 @@ public:
 
         glm::vec3 center = (worldMin + worldMax) * 0.5f;
         glm::vec3 dims = worldMax - worldMin;
-        box->positions.push_back(center);
-        box->sizes.push_back(dims);
     }
 };

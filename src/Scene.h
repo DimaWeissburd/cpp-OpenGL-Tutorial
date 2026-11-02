@@ -3,17 +3,24 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <map>
 #include <vector>
 #include <glm/glm.hpp>
+#include <Rendering/Camera.h>
+#include <Rendering/Model.h>
 #include <Rendering/Light.h>
 #include <Rendering/Shader.h>
-#include <Rendering/Camera.h>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
 #include <Algorithms/States.hpp>
 
+class Model; // Forward declaration
+
 class Scene {
 public:
+	std::map<std::string, Model*> models;
+	std::map<std::string, std::pair<std::string, unsigned int>> instances;
+
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	Scene();
@@ -24,7 +31,8 @@ public:
 	void processInput(float dt);
 	void update();
 	void newFrame();
-	void render(Shader shader, bool applyLighting = true);
+	void renderShader(Shader shader, bool applyLighting = true);
+	void renderInstances(std::string modelId, Shader shader, float dt);
 
 	void cleanup();
 
@@ -33,6 +41,15 @@ public:
 
 	void setShouldClose(bool shouldClose);
 	void setWindowColor(float r, float g, float b, float a);
+
+	void registerModel(Model* model);
+	std::string generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position);
+	void initInstances();
+	void loadModels();
+	void removeInstances(std::string instanceId);
+
+	std::string currentId;
+	std::string generateId();
 
 	std::vector<PointLight*> pointLights;
 	unsigned int activePointLights;

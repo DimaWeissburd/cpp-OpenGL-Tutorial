@@ -2,23 +2,14 @@
 #define SPHERE_HPP
 
 #include "../Model.h"
-#include "ModelArray.hpp"
 
 class Sphere : public Model {
 public:
-	Sphere(glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f))
-		: Model(BoundTypes::SPHERE, position, rotation, size, true) {}
+	Sphere(unsigned int maxNoInstances)
+		: Model("sphere", BoundTypes::SPHERE, maxNoInstances, NO_TEX | DYNAMIC) {}
 
 	void init() {
 		loadModel("assets/models/the_sphere/scene.gltf");
-	}
-};
-
-class SphereArray : public ModelArray<Sphere> {
-public:
-	void init() {
-		model = Sphere(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.25f));
-		ModelArray::init();
 	}
 };
 

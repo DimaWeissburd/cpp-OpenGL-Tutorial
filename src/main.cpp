@@ -36,12 +36,12 @@ void processInput(double dt);
 float dt = 0.0f;
 float lastFrame = 0.0f;
 
+Sphere sphere(10);
+
 Joystick joystick(0);
 
 unsigned int SCR_WIDTH = 800;
 unsigned int SCR_HEIGHT = 600;
-
-SphereArray launchObjects;
 
 int main() {
     scene = Scene(3, 3, "OpenGL Tutorial", 800, 600);
@@ -55,24 +55,25 @@ int main() {
         return -1;
     }
 
-    Shader shader("Assets/Object.vs", "Assets/Object.fs");
+    Shader shader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
     Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
-    Shader launchShader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
     Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
 
-    HandHeld magicStaff;
-    magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
-    magicStaff.rotation.y = -90.0f;
+    Lamp lamp(4);
+    scene.registerModel(&lamp);
 
-    Model fox;
-    fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
-    fox.rotation.x = -90.0f;
-    fox.rotation.z = -90.0f;
+    scene.registerModel(&sphere);
 
-    launchObjects.init();
+    scene.loadModels();
 
-    Box box;
-    box.init();
+    //HandHeld magicStaff(1);
+    //magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
+    //magicStaff.rotation.y = -90.0f;
+
+    //Model fox("fox", BoundTypes::AABB, 1, CONST_INSTANCES);
+    //fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
+    //fox.rotation.x = -90.0f;
+    //fox.rotation.z = -90.0f;
 
     DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
@@ -95,15 +96,14 @@ int main() {
     float k2 = 0.032f;
 
     PointLight pointLights[4];
-    LampArray lamps;
-    lamps.init();
+
     for (unsigned int i = 0; i < 4; i++) {
         pointLights[i] = {
             pointLightPositions[i],
             k0, k1, k2,
             ambient, diffuse, specular
         };
-        lamps.lightInstances.push_back(pointLights[i]);
+        scene.generateInstance(lamp.id, glm::vec3(0.25f), 0.25, pointLightPositions[i]);
         scene.pointLights.push_back(&pointLights[i]);
         States::activate(&scene.activePointLights, i);
     }
@@ -115,7 +115,9 @@ int main() {
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
     };
     scene.spotLights.push_back(&spotLight);
-    States::activate(&scene.activeSpotLights, 0);
+    scene.activeSpotLights = 1;
+
+    scene.initInstances();
 
     joystick.update();
     if (joystick.isPresent()) {
@@ -125,59 +127,47 @@ int main() {
     }
 
     while (!scene.shouldClose()) {
-        box.positions.clear();
-        box.sizes.clear();
-
         double currentTime = glfwGetTime();
         dt = currentTime - lastFrame;
         lastFrame = currentTime;
 
-        processInput(dt);
         scene.update();
+        
+        processInput(dt);
 
-        spotLight.position = scene.getActiveCamera()->cameraPosition;
-        spotLight.direction = scene.getActiveCamera()->cameraFront;
-
-        scene.render(shader);
-        fox.render(shader, dt, &box);
-        magicStaff.render(shader, dt, &box, &scene);
-
-        for (int i = (int)launchObjects.instances.size() - 1; i >= 0; i--) {
-            if (glm::length(scene.getActiveCamera()->cameraPosition - launchObjects.instances[i].position) > 50.0f) {
-                launchObjects.instances.erase(launchObjects.instances.begin() + i);
+        std::stack<unsigned int> removeObjects;
+        for (int i = 0; i < sphere.currentNoInstances; i++) {
+            if (glm::length(camera.cameraPosition - sphere.instances[i].position) > 250.0f) {
+                removeObjects.push(i);
             }
         }
-        if (!launchObjects.instances.empty()) {
-            scene.render(launchShader);
-            launchObjects.render(launchShader, dt, &box);
+
+        while (removeObjects.size() != 0) {
+            sphere.removeInstance(removeObjects.top());
+            removeObjects.pop();
         }
 
-        scene.render(lampShader, false);
-        lamps.render(lampShader, dt, &box);
-
-        if (box.positions.size() > 0) {
-            scene.render(boxShader, false);
-            box.render(boxShader);
+        if (sphere.currentNoInstances > 0) {
+            scene.renderShader(shader);
+            scene.renderInstances(sphere.id, shader, dt);
         }
+
+        scene.renderShader(lampShader);
+        scene.renderInstances(lamp.id, lampShader, dt);
 
         scene.newFrame();
     }
-
-    fox.cleanup();
-    magicStaff.cleanup();
-    lamps.cleanup();
-    box.cleanup();
-    launchObjects.cleanup();
 
     scene.cleanup();
     return 0;
 }
 
 void launchItem(float dt) {
-    RigidBody rb(1.0f, scene.getActiveCamera()->cameraPosition);
-    rb.transferEnergy(100.0f, scene.getActiveCamera()->cameraFront);
-    rb.applyAcceleration(Environment::gravitationalAcceleration);
-    launchObjects.instances.push_back(rb);
+    std::string id = scene.generateInstance(sphere.id, glm::vec3(1.0f), 1.0f, camera.cameraPosition);
+    if (id != "") {
+        sphere.instances[scene.instances[id].second].transferEnergy(100.0f, camera.cameraFront);
+        sphere.instances[scene.instances[id].second].applyAcceleration(Environment::gravitationalAcceleration);
+    }
 }
 
 void processInput(double dt) {
@@ -188,7 +178,7 @@ void processInput(double dt) {
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_F)) {
-        States::toggle(&scene.activeSpotLights, 0);
+        States::toggleIndex(&scene.activeSpotLights, 0);
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_E)) {
@@ -197,7 +187,7 @@ void processInput(double dt) {
 
     for (int i = 0; i < 4; i++) {
         if (Keyboard::keyPressed(GLFW_KEY_1 + i)) {
-            States::toggle(&scene.activePointLights, i);
+            States::toggleIndex(&scene.activePointLights, i);
         }
     }
 }

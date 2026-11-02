@@ -13,9 +13,17 @@
 #include "Models/Box.hpp"
 #include "../Physics/RigidBody.h"
 #include "../Algorithms/Bounds.h"
+#include "../Scene.h"
+
+#define DYNAMIC         (unsigned int)1
+#define CONST_INSTANCES (unsigned int)2
+#define NO_TEX          (unsigned int)4
+
+class Scene; // Forward declaration
 
 class Model {
 public:
+    std::string id;
     RigidBody rb;
     glm::vec3 rotation;
     glm::vec3 size;
@@ -24,14 +32,30 @@ public:
 
     std::vector<Mesh> meshes;
 
-    Model(BoundTypes boundType = BoundTypes::AABB, glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), bool noTex = false);
+    std::vector<RigidBody> instances;
 
-    void init();
+    unsigned int maxNoInstances;
+    unsigned int currentNoInstances;
+
+    unsigned int switches;
+
+    Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, unsigned int flags = 0);
+
+    virtual void init();
+
+    unsigned int generateInstance(glm::vec3 size, float mass, glm::vec3 position);
+
+    void initInstances();
+
     void loadModel(std::string path);
 
-    void render(Shader shader, float dt, Box *box, bool setModel = true, bool doRender = true);
+    virtual void render(Shader shader, float dt, Scene* scene, bool setModel = true);
 
     void cleanup();
+
+    void removeInstance(unsigned int idx);
+
+    unsigned int getIdx(std::string id);
 
 protected:
     bool noTex;
@@ -43,6 +67,9 @@ protected:
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh* mesh, const aiScene* scene);
     std::vector<Texture> loadTextures(aiMaterial* mat, aiTextureType type);
+
+    BufferObject positionVBO;
+    BufferObject sizeVBO;
 };
 
 #endif

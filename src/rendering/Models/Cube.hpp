@@ -8,8 +8,8 @@ class Cube : public Model {
 public:
     Material material;
 
-    Cube(glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f))
-        : Model(BoundTypes::AABB, position, glm::vec3(0.0f), size) {}
+    Cube(unsigned int maxNoInstances)
+        : Model("cube", BoundTypes::AABB, maxNoInstances, CONST_INSTANCES | NO_TEX) {}
 
     void init() {
         int noVertices = 36;
@@ -66,7 +66,10 @@ public:
 
         BoundingRegion br(glm::vec3(-0.5f), glm::vec3(0.5f));
 
-        meshes.push_back(Mesh(br, Vertex::genList(vertices, noVertices), indices));
+        Mesh ret(br, {});
+        ret.loadData(Vertex::genList(vertices, noVertices), indices);
+
+        meshes.push_back(ret);
     }
 };
 

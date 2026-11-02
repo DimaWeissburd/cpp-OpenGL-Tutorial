@@ -10,8 +10,9 @@ BoundingRegion::BoundingRegion(glm::vec3 min, glm::vec3 max)
 	:type(BoundTypes::AABB), min(min), max(max) {}
 
 bool BoundingRegion::operator==(const BoundingRegion& br) const {
-	if (type != br.type) return false;
-
+	if (type != br.type) {
+		return false;
+	}
 	if (type == BoundTypes::AABB) {
 		return min == br.min && max == br.max;
 	}
