@@ -67,7 +67,13 @@ bool Scene::init() {
 	glEnable(GL_DEPTH_TEST);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+	octree = new Octree::node(BoundingRegion(glm::vec3(-16.0f), glm::vec3(16.0f)));
+
 	return true;
+}
+
+void Scene::prepare(Box& box) {
+	octree->update(box);
 }
 
 void Scene::processInput(float dt) {
@@ -118,7 +124,13 @@ void Scene::update() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Scene::newFrame() {
+void Scene::newFrame(Box& box) {
+	box.positions.clear();
+	box.sizes.clear();
+
+	octree->processPending();
+	octree->update(box);
+
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 }
@@ -191,12 +203,13 @@ void Scene::registerModel(Model* model) {
 }
 
 RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position) {
-	RigidBody* rb = models[modelId]->generateInstance(size, mass, position);
-	if (rb) {
+	RigidBody* rigidBody = models[modelId]->generateInstance(size, mass, position);
+	if (rigidBody) {
 		std::string id = generateId();
-		rb->instanceId = id;
-		instances.insert(id, rb);
-		return rb;
+		rigidBody->instanceId = id;
+		instances.insert(id, rigidBody);
+		octree->addToPending(rigidBody, models);
+		return rigidBody;
 	}
 	return nullptr;
 }

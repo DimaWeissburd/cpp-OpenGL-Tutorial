@@ -64,6 +64,9 @@ int main() {
 
     scene.registerModel(&sphere);
 
+    Box box;
+    box.init();
+
     scene.loadModels();
 
     //HandHeld magicStaff(1);
@@ -118,6 +121,7 @@ int main() {
     scene.activeSpotLights = 1;
 
     scene.initInstances();
+    scene.prepare(box);
 
     joystick.update();
     if (joystick.isPresent()) {
@@ -146,11 +150,14 @@ int main() {
             scene.renderInstances(sphere.id, shader, dt);
         }
 
-        scene.renderShader(lampShader);
+        scene.renderShader(lampShader, false);
         scene.renderInstances(lamp.id, lampShader, dt);
 
+        scene.renderShader(boxShader, false);
+        box.render(boxShader);
+
+        scene.newFrame(box);
         scene.clearDeadInstances();
-        scene.newFrame();
     }
 
     scene.cleanup();

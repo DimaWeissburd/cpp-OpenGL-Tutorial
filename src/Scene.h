@@ -10,12 +10,17 @@
 #include <Rendering/Model.h>
 #include <Rendering/Light.h>
 #include <Rendering/Shader.h>
+#include <Rendering/Models/Box.hpp>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
+#include <Algorithms/Octree.h>
 #include <Algorithms/States.hpp>
 #include <Algorithms/Trie.hpp>
 
-class Model; // Forward declaration
+namespace Octree {
+	class node;
+}
+class Model;
 
 class Scene {
 public:
@@ -24,6 +29,8 @@ public:
 
 	std::vector<RigidBody*> instancesToDelete;
 
+	Octree::node* octree;
+
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	Scene();
@@ -31,9 +38,11 @@ public:
 
 	bool init();
 
+	void prepare(Box& box);
+
 	void processInput(float dt);
 	void update();
-	void newFrame();
+	void newFrame(Box& box);
 	void renderShader(Shader shader, bool applyLighting = true);
 	void renderInstances(std::string modelId, Shader shader, float dt);
 

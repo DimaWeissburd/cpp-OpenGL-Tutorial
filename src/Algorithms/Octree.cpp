@@ -1,30 +1,30 @@
 #include "Octree.h"
 
-void Octree::calculateBounds(BoundingRegion* out, Octant octant, BoundingRegion parentRegion) {
+void Octree::calculateBounds(BoundingRegion& out, Octant octant, BoundingRegion parentRegion) {
     glm::vec3 center = parentRegion.calculateCenter();
     if (octant == Octant::O1) {
-        out = new BoundingRegion(center, parentRegion.max);
+        out = BoundingRegion(center, parentRegion.max);
     }
     else if (octant == Octant::O2) {
-        out = new BoundingRegion(glm::vec3(parentRegion.min.x, center.y, center.z), glm::vec3(center.x, parentRegion.max.y, parentRegion.max.z));
+        out = BoundingRegion(glm::vec3(parentRegion.min.x, center.y, center.z), glm::vec3(center.x, parentRegion.max.y, parentRegion.max.z));
     }
     else if (octant == Octant::O3) {
-        out = new BoundingRegion(glm::vec3(parentRegion.min.x, parentRegion.min.y, center.z), glm::vec3(center.x, center.y, parentRegion.max.z));
+        out = BoundingRegion(glm::vec3(parentRegion.min.x, parentRegion.min.y, center.z), glm::vec3(center.x, center.y, parentRegion.max.z));
     }
     else if (octant == Octant::O4) {
-        out = new BoundingRegion(glm::vec3(center.x, parentRegion.min.y, center.z), glm::vec3(parentRegion.max.x, center.y, parentRegion.max.z));
+        out = BoundingRegion(glm::vec3(center.x, parentRegion.min.y, center.z), glm::vec3(parentRegion.max.x, center.y, parentRegion.max.z));
     }
     else if (octant == Octant::O5) {
-        out = new BoundingRegion(glm::vec3(center.x, center.y, parentRegion.min.z), glm::vec3(parentRegion.max.x, parentRegion.max.y, center.z));
+        out = BoundingRegion(glm::vec3(center.x, center.y, parentRegion.min.z), glm::vec3(parentRegion.max.x, parentRegion.max.y, center.z));
     }
     else if (octant == Octant::O6) {
-        out = new BoundingRegion(glm::vec3(parentRegion.min.x, center.y, parentRegion.min.z), glm::vec3(center.x, parentRegion.max.y, center.z));
+        out = BoundingRegion(glm::vec3(parentRegion.min.x, center.y, parentRegion.min.z), glm::vec3(center.x, parentRegion.max.y, center.z));
     }
     else if (octant == Octant::O7) {
-        out = new BoundingRegion(parentRegion.min, center);
+        out = BoundingRegion(parentRegion.min, center);
     }
     else if (octant == Octant::O8) {
-        out = new BoundingRegion(glm::vec3(center.x, parentRegion.min.y, parentRegion.min.z), glm::vec3(parentRegion.max.x, center.y, center.z));
+        out = BoundingRegion(glm::vec3(center.x, parentRegion.min.y, parentRegion.min.z), glm::vec3(parentRegion.max.x, center.y, center.z));
     }
 }
 
@@ -49,19 +49,23 @@ void Octree::node::addToPending(RigidBody* instance, Trie::Trie<Model*> models) 
 
 void Octree::node::build() {
     if (objects.size() <= 1) {
+        treeBuilt = true;
+        treeReady = true;
         return;
     }
 
     glm::vec3 dimensions = region.calculateDimensions();
     for (int i = 0; i < 3; i++) {
         if (dimensions[i] < MIN_BOUNDS) {
+            treeBuilt = true;
+            treeReady = true;
             return;
         }
     }
 
     BoundingRegion octants[NO_CHILDREN];
     for (int i = 0; i < NO_CHILDREN; i++) {
-        calculateBounds(&octants[i], (Octant)(1 << i), region);
+        calculateBounds(octants[i], (Octant)(1 << i), region);
     }
 
     std::vector<BoundingRegion> octLists[NO_CHILDREN];
@@ -87,6 +91,7 @@ void Octree::node::build() {
         if (octLists[i].size() != 0) {
             children[i] = new node(octants[i], octLists[i]);
             States::activateIndex(&activeOctants, i);
+            children[i]->parent = this;
             children[i]->build();
             hasChildren = true;
         }
@@ -96,7 +101,10 @@ void Octree::node::build() {
     treeReady = true;
 }
 
-void Octree::node::update() {
+void Octree::node::update(Box& box) {
+    box.positions.push_back(region.calculateCenter());
+    box.sizes.push_back(region.calculateDimensions());
+
     if (treeBuilt && treeReady) {
         if (objects.size() == 0) {
             if (!hasChildren) {
@@ -129,26 +137,30 @@ void Octree::node::update() {
                 objects[i].transform();
                 movedObjects.push({ i, objects[i]});
             }
+            box.positions.push_back(objects[i].calculateCenter());
+            box.sizes.push_back(objects[i].calculateDimensions());
         }
 
         unsigned char flags = activeOctants;
         for (int i = 0; flags > 0; flags >>= 1, i++) {
-            if (States::isIndexActive(&flags, 0) && children[i]->currentLifespan == 0) {
+            if (States::isIndexActive(&flags, 0) && children[i] != nullptr && children[i]->currentLifespan == 0) {
                 if (children[i]->objects.size() > 0) {
                     children[i]->currentLifespan = -1;
                 } else {
-                    free(children[i]);
+                    children[i]->destroy();
+                    delete children[i];
                     children[i] = nullptr;
                     States::deactivateIndex(&activeOctants, i);
                 }
             }
         }
+        hasChildren = (activeOctants != 0);
 
         if (children != nullptr) {
             for (unsigned char flags = activeOctants, i = 0; flags > 0; flags >>= 1, i++) {
                 if (States::isIndexActive(&flags, 0)) {
                     if (children[i] != nullptr) {
-                        children[i]->update();
+                        children[i]->update(box);
                     }
                 }
             }
@@ -203,7 +215,9 @@ bool Octree::node::insert(BoundingRegion object) {
     }
 
     if (!region.containsRegion(object)) {
-        return parent == nullptr ? false : parent->insert(object);
+        if (parent != nullptr) return parent->insert(object);
+        objects.push_back(object);
+        return true;
     }
 
     BoundingRegion octants[NO_CHILDREN];
@@ -211,9 +225,38 @@ bool Octree::node::insert(BoundingRegion object) {
         if (children[i] != nullptr) {
             octants[i] = children[i]->region;
         } else {
-            calculateBounds(&octants[i], (Octant)(1 << i), region);
+            calculateBounds(octants[i], (Octant)(1 << i), region);
         }
     }
+
+    //std::vector<BoundingRegion> octLists[NO_CHILDREN];
+    //objects.push_back(object);
+
+    //for (int i = objects.size() - 1; i >= 0; i--) {
+    //    for (int j = 0; j < NO_CHILDREN; j++) {
+    //        if (octants[j].containsRegion(objects[i])) {
+    //            octLists[j].push_back(objects[i]);
+    //            objects.erase(objects.begin() + i);
+    //            break;
+    //        }
+    //    }
+    //}
+
+    //for (int i = 0; i < NO_CHILDREN; i++) {
+    //    if (octLists[i].size() != 0) {
+    //        if (children[i]) {
+    //            for (int j = 0, length = octLists[i].size(); i < length; i++) {
+    //                children[i]->insert(octLists[i][j]);
+    //            }
+    //        } else {
+    //            children[i] = new node(octants[i], octLists[i]);
+    //            States::activateIndex(&activeOctants, i);
+    //            children[i]->parent = this;
+    //            children[i]->build();
+    //            hasChildren = true;
+    //        }
+    //    }
+    //}
 
     for (int i = 0; i < NO_CHILDREN; i++) {
         if (octants[i].containsRegion(object)) {
@@ -222,6 +265,9 @@ bool Octree::node::insert(BoundingRegion object) {
             } else {
                 children[i] = new node(octants[i], { object });
                 States::activateIndex(&activeOctants, i);
+                children[i]->parent = this;
+                children[i]->build();
+                hasChildren = true;
                 return true;
             }
         }
@@ -233,10 +279,11 @@ bool Octree::node::insert(BoundingRegion object) {
 
 void Octree::node::destroy() {
     if (children != nullptr) {
-        for (int flags = activeOctants, i = 0; flags > 0; flags >> 1, i++) {
+        for (int flags = activeOctants, i = 0; flags > 0; flags >>= 1, i++) {
             if (States::isActive(&flags, 0)) {
                 if (children[i] != nullptr) {
                     children[i]->destroy();
+                    delete children[i];
                     children[i] = nullptr;
                 }
             }

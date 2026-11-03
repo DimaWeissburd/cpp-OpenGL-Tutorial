@@ -19,7 +19,7 @@
 #define CONST_INSTANCES (unsigned int)2
 #define NO_TEX          (unsigned int)4
 
-class Scene; // Forward declaration
+class Scene;
 
 class Model {
 public:

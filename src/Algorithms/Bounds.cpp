@@ -1,14 +1,14 @@
 #include "Bounds.h"
 
-bool BoundingRegion::operator==(const BoundingRegion& br) const {
-	if (type != br.type) {
+bool BoundingRegion::operator==(const BoundingRegion& boundingRegion) const {
+	if (type != boundingRegion.type) {
 		return false;
 	}
 	if (type == BoundTypes::AABB) {
-		return min == br.min && max == br.max;
+		return min == boundingRegion.min && max == boundingRegion.max;
 	}
 	else {
-		return center == br.center && radius == br.radius;
+		return center == boundingRegion.center && radius == boundingRegion.radius;
 	}
 }
 
@@ -50,30 +50,30 @@ glm::vec3 BoundingRegion::calculateDimensions() {
 
 bool BoundingRegion::containsPoint(glm::vec3 point) {
 	if (type == BoundTypes::AABB) {
-		return (point.x >= min.x) && (point.x < max.x)
-			&& (point.y >= min.y) && (point.y < max.y)
-			&& (point.z >= min.z) && (point.z < max.z);
+		return (point.x >= min.x) && (point.x <= max.x)
+			&& (point.y >= min.y) && (point.y <= max.y)
+			&& (point.z >= min.z) && (point.z <= max.z);
 	} else {
 		float distSquared = 0.0f;
 		for (int i = 0; i < 3; i++) {
-			distSquared = (center[i] - point[i]) * (center[i] - point[i]);
+			distSquared += (center[i] - point[i]) * (center[i] - point[i]);
 		}
 		return distSquared <= (radius * radius);
 	}
 }
 
-bool BoundingRegion::containsRegion(BoundingRegion br) {
-	if (br.type == BoundTypes::AABB) {
-		return containsPoint(br.min) && containsPoint(br.max);
-	} else if (type == BoundTypes::SPHERE && br.type == BoundTypes::SPHERE) {
-		return glm::length(center - br.center) + br.radius < radius;
+bool BoundingRegion::containsRegion(BoundingRegion boundingRegion) {
+	if (boundingRegion.type == BoundTypes::AABB) {
+		return containsPoint(boundingRegion.min) && containsPoint(boundingRegion.max);
+	} else if (type == BoundTypes::SPHERE && boundingRegion.type == BoundTypes::SPHERE) {
+		return glm::length(center - boundingRegion.center) + boundingRegion.radius < radius;
 	} else {
-		if (!containsPoint(br.center)) {
+		if (!containsPoint(boundingRegion.center)) {
 			return false;
 		}
 		for (int i = 0; i < 3; i++) {
-			if (abs(max[i] - br.center[i]) < br.radius ||
-				abs(min[i] - br.center[i]) < br.radius) {
+			if (abs(max[i] - boundingRegion.center[i]) < boundingRegion.radius ||
+				abs(min[i] - boundingRegion.center[i]) < boundingRegion.radius) {
 				return false;
 			}
 		}
@@ -81,29 +81,29 @@ bool BoundingRegion::containsRegion(BoundingRegion br) {
 	}
 }
 
-bool BoundingRegion::intersectsWith(BoundingRegion br) {
-	if (type == BoundTypes::AABB && br.type == BoundTypes::AABB) {
-		glm::vec3 rad = calculateDimensions() / 2.0f;
-		glm::vec3 radBr = br.calculateDimensions() / 2.0f;
+bool BoundingRegion::intersectsWith(BoundingRegion boundingRegion) {
+	if (type == BoundTypes::AABB && boundingRegion.type == BoundTypes::AABB) {
+		glm::vec3 radius = calculateDimensions() / 2.0f;
+		glm::vec3 boundingRegionRadius = boundingRegion.calculateDimensions() / 2.0f;
 		glm::vec3 center = calculateCenter();
-		glm::vec3 centerBr = br.calculateCenter();
-		glm::vec3 dist = abs(center - centerBr);
+		glm::vec3 boundingRegionCenter = boundingRegion.calculateCenter();
+		glm::vec3 dist = abs(center - boundingRegionCenter);
 		for (int i = 0; i < 3; i++) {
-			if (dist[i] > rad[i] + radBr[i]) {
+			if (dist[i] > radius[i] + boundingRegionRadius[i]) {
 				return false;
 			}
 		}
 		return true;
-	} else if (type == BoundTypes::SPHERE && br.type == BoundTypes::SPHERE) {
-		return glm::length(center - br.center) < (radius + br.radius);
+	} else if (type == BoundTypes::SPHERE && boundingRegion.type == BoundTypes::SPHERE) {
+		return glm::length(center - boundingRegion.center) < (radius + boundingRegion.radius);
 	} else if (type == BoundTypes::SPHERE) {
 		float distSquared = 0.0f;
 		for (int i = 0; i < 3; i++) {
-			float closestPoint = std::max(br.min[i], std::min(center[i], br.max[i]));
+			float closestPoint = std::max(boundingRegion.min[i], std::min(center[i], boundingRegion.max[i]));
 			distSquared += (closestPoint - center[i]) * (closestPoint - center[i]);
 		}
 		return distSquared < (radius * radius);
 	} else {
-		return br.intersectsWith(*this);
+		return boundingRegion.intersectsWith(*this);
 	}
 }
