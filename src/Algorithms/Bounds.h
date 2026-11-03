@@ -4,6 +4,10 @@
 #include <glm/glm.hpp>
 #include "../Physics/RigidBody.h"
 
+namespace Octree {
+	class node;
+}
+
 enum class BoundTypes : unsigned char {
 	AABB = 0x00,
 	SPHERE = 0x01
@@ -16,6 +20,8 @@ public:
 	BoundTypes type;
 
 	RigidBody* instance;
+
+	Octree::node* cell;
 
 	glm::vec3 center;
 	float radius;

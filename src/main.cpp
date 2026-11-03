@@ -54,7 +54,6 @@ int main() {
         glfwTerminate();
         return -1;
     }
-
     Shader shader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
     Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
     Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
@@ -165,9 +164,9 @@ int main() {
 }
 
 void launchItem(float dt) {
-    RigidBody* rb = scene.generateInstance(sphere.id, glm::vec3(1.0f), 1.0f, camera.cameraPosition);
+    RigidBody* rb = scene.generateInstance(sphere.id, glm::vec3(0.1f), 1.0f, camera.cameraPosition);
     if (rb) {
-        rb->transferEnergy(100.0f, camera.cameraFront);
+        rb->transferEnergy(1000.0f, camera.cameraFront);
         rb->applyAcceleration(Environment::gravitationalAcceleration);
     }
 }

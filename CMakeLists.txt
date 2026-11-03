@@ -4,53 +4,8 @@ project(CPP_OpenGL_Tutorial)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_definitions(GLEW_STATIC)
-
-add_executable(
-    CPP_OpenGL_Tutorial
-    src/main.cpp
-    src/Scene.cpp
-    src/Scene.h
-    src/glad.c
-    src/stb.cpp
-    src/Algorithms/Bounds.cpp
-    src/Algorithms/Bounds.h
-    src/Algorithms/List.hpp
-    src/Algorithms/Octree.cpp
-    src/Algorithms/Octree.h
-    src/Algorithms/States.hpp
-    src/Algorithms/Trie.hpp
-    src/IO/Joystick.cpp
-    src/IO/Joystick.h
-    src/IO/Keyboard.cpp
-    src/IO/Keyboard.h
-    src/IO/Mouse.cpp
-    src/IO/Mouse.h
-    src/Physics/Environment.cpp
-    src/Physics/Environment.h
-    src/Physics/RigidBody.cpp
-    src/Physics/RigidBody.h
-    src/Rendering/Models/Box.hpp
-    src/Rendering/Models/Cube.hpp
-    src/Rendering/Models/HandHeld.hpp
-    src/Rendering/Models/Lamp.hpp
-    src/Rendering/Models/Sphere.hpp
-    src/Rendering/Camera.cpp
-    src/Rendering/Camera.h
-    src/Rendering/GLMemory.hpp
-    src/Rendering/Light.cpp
-    src/Rendering/Light.h
-    src/Rendering/Material.h
-    src/Rendering/Material.cpp
-    src/Rendering/Mesh.h
-    src/Rendering/Mesh.cpp
-    src/Rendering/Model.h
-    src/Rendering/Model.cpp
-    src/Rendering/Shader.cpp
-    src/Rendering/Shader.h
-    src/Rendering/Texture.h
-    src/Rendering/Texture.cpp
-)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.c)
+add_executable(CPP_OpenGL_Tutorial ${SOURCES})
 
 target_include_directories(CPP_OpenGL_Tutorial PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Linking/include"
@@ -62,12 +17,13 @@ target_link_directories(CPP_OpenGL_Tutorial PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}
 set(OpenGLLibs glfw3 opengl32 assimp-vc145-mtd)
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
 
-# Copy assets folder post-build
-add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD
+add_custom_target(copy_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/assets"
-    "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>/assets"
+            "${CMAKE_SOURCE_DIR}/Assets"
+            "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>/Assets"
+    COMMENT "Copying assets"
 )
+add_dependencies(CPP_OpenGL_Tutorial copy_assets)
 
 # Copy Assimp DLL post-build (only needed for dynamic builds)
 add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD

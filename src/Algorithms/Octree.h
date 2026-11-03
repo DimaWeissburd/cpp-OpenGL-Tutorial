@@ -9,12 +9,13 @@
 #include "Bounds.h"
 #include "Trie.hpp"
 #include "../Rendering/Model.h"
-#include "../Rendering/Models/Box.hpp"
 
 #define NO_CHILDREN 8
 #define MIN_BOUNDS 0.5
 
 class Model;
+class BoundingRegion;
+class Box;
 
 namespace Octree {
 	enum class Octant : unsigned char {
@@ -36,8 +37,6 @@ namespace Octree {
 		node* children[NO_CHILDREN] = { nullptr };
 
 		unsigned char activeOctants = 0;
-
-		bool hasChildren = false;
 
 		bool treeReady = false;
 		bool treeBuilt = false;
@@ -65,6 +64,10 @@ namespace Octree {
 		void processPending();
 
 		bool insert(BoundingRegion object);
+
+		void checkCollisionsSelf(BoundingRegion object);
+
+		void checkCollisionsChildren(BoundingRegion object);
 
 		void destroy();
 	};

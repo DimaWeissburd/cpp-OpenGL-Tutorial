@@ -153,7 +153,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
 
-    BoundingRegion br(boundType);
+    BoundingRegion boundingRegion(boundType);
     glm::vec3 min((float)(~0));
     glm::vec3 max(-(float)(~0));
 
@@ -190,25 +190,25 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     }
 
     if (boundType == BoundTypes::AABB) {
-        br.min = min;
-        br.ogMin = min;
-        br.max = max;
-        br.ogMax = max;
+        boundingRegion.min = min;
+        boundingRegion.ogMin = min;
+        boundingRegion.max = max;
+        boundingRegion.ogMax = max;
     } else {
-        br.center = BoundingRegion(min, max).calculateCenter();
-        br.ogCenter = br.center;
+        boundingRegion.center = BoundingRegion(min, max).calculateCenter();
+        boundingRegion.ogCenter = boundingRegion.center;
         float maxRadiusSquared = 0.0f;
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
             float radiusSquared = 0.0f;
             for (int j = 0; j < 3; j++) {
-                radiusSquared += (vertices[i].position[j] - br.center[j]) * (vertices[i].position[j] - br.center[j]);
+                radiusSquared += (vertices[i].position[j] - boundingRegion.center[j]) * (vertices[i].position[j] - boundingRegion.center[j]);
             }
             if (radiusSquared > maxRadiusSquared) {
                 maxRadiusSquared = radiusSquared;
             }
         }
-        br.radius = sqrt(maxRadiusSquared);
-        br.ogRadius = br.radius;
+        boundingRegion.radius = sqrt(maxRadiusSquared);
+        boundingRegion.ogRadius = boundingRegion.radius;
     }
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
@@ -223,13 +223,15 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     if (mesh->mMaterialIndex >= 0) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        if (States::isIndexActive<unsigned int>(&switches, NO_TEX)) {
+        if (States::isActive<unsigned int>(&switches, NO_TEX)) {
             aiColor4D diff(1.0f);
-            aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diff);
+            if (aiGetMaterialColor(material, AI_MATKEY_BASE_COLOR, &diff) != AI_SUCCESS) {
+                aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diff);
+            }
             aiColor4D spec(1.0f);
             aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &spec);
 
-            ret = Mesh(br, diff, spec);
+            ret = Mesh(boundingRegion, diff, spec);
         }
         else {
             std::vector<Texture> diffuseMaps = loadTextures(material, aiTextureType_DIFFUSE);
@@ -237,7 +239,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             std::vector<Texture> specularMaps = loadTextures(material, aiTextureType_SPECULAR);
             textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
-            ret = Mesh(br, textures);
+            ret = Mesh(boundingRegion, textures);
         }
     }
 

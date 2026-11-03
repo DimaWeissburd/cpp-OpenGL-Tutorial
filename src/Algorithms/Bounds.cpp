@@ -1,4 +1,5 @@
 #include "Bounds.h"
+#include "Octree.h"
 
 bool BoundingRegion::operator==(const BoundingRegion& boundingRegion) const {
 	if (type != boundingRegion.type) {
@@ -53,7 +54,7 @@ bool BoundingRegion::containsPoint(glm::vec3 point) {
 		return (point.x >= min.x) && (point.x <= max.x)
 			&& (point.y >= min.y) && (point.y <= max.y)
 			&& (point.z >= min.z) && (point.z <= max.z);
-	} else {
+	} else if (type == BoundTypes::SPHERE) {
 		float distSquared = 0.0f;
 		for (int i = 0; i < 3; i++) {
 			distSquared += (center[i] - point[i]) * (center[i] - point[i]);

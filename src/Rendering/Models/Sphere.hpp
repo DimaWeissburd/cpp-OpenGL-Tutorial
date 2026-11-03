@@ -9,7 +9,7 @@ public:
 		: Model("sphere", BoundTypes::SPHERE, maxNoInstances, NO_TEX | DYNAMIC) {}
 
 	void init() {
-		loadModel("assets/models/the_sphere/scene.gltf");
+		loadModel("Assets/Models/the_sphere/scene.gltf");
 	}
 };
 

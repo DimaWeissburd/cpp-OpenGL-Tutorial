@@ -176,6 +176,8 @@ void Scene::cleanup() {
 		model->cleanup();
 	});
 
+	octree->destroy();
+
 	glfwTerminate();
 }
 
@@ -227,14 +229,15 @@ void Scene::loadModels() {
 }
 
 void Scene::removeInstance(std::string instanceId) {
-	std::string targetModel = instances[instanceId]->modelId;
-	models[targetModel]->removeInstance(instanceId);
-	instances[instanceId] = nullptr;
+	RigidBody* rb = instances[instanceId];
+	if (!rb) return;
+	models[rb->modelId]->removeInstance(instanceId);
 	instances.erase(instanceId);
 }
 
 void Scene::markForDeletion(std::string instanceId) {
 	RigidBody* instance = instances[instanceId];
+	if (!instance || States::isActive(&instance->state, INSTANCE_DEAD)) return;
 	States::activate(&instance->state, INSTANCE_DEAD);
 	instancesToDelete.push_back(instance);
 }

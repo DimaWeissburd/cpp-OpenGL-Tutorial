@@ -55,7 +55,7 @@ void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _in
     VAO["VBO"].bind();
     VAO["VBO"].setAttPointer<GLfloat>(0, 3, GL_FLOAT, 8, 0);
     VAO["VBO"].setAttPointer<GLfloat>(1, 3, GL_FLOAT, 8, 3);
-    VAO["VBO"].setAttPointer<GLfloat>(2, 3, GL_FLOAT, 8, 6);
+    VAO["VBO"].setAttPointer<GLfloat>(2, 2, GL_FLOAT, 8, 6);
 
     VAO["VBO"].clear();
 
@@ -67,7 +67,9 @@ void Mesh::render(Shader shader, unsigned int noInstances) {
         shader.set4Float("material.diffuse", diffuse);
         shader.set4Float("material.specular", specular);
         shader.setInt("noTex", 1);
+        shader.setFloat("material.shininess", 0.5f);
     } else {
+        shader.setInt("noTex", 0);
         unsigned int diffuseIdx = 0;
         unsigned int specularIdx = 0;
 
