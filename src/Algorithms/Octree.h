@@ -7,6 +7,8 @@
 #include "List.hpp"
 #include "States.hpp"
 #include "Bounds.h"
+#include "Trie.hpp"
+#include "../Rendering/Model.h"
 
 #define NO_CHILDREN 8
 #define MIN_BOUNDS 0.5
@@ -37,6 +39,9 @@ namespace Octree {
 		bool treeReady = false;
 		bool treeBuilt = false;
 
+		short maxLifespan = 8;
+		short currentLifespan = -1;
+
 		std::vector<BoundingRegion> objects;
 		std::queue<BoundingRegion> queue;
 
@@ -47,6 +52,8 @@ namespace Octree {
 		node(BoundingRegion bounds);
 
 		node(BoundingRegion bounds, std::vector<BoundingRegion> objectList);
+
+		void addToPending(RigidBody* instance, Trie::Trie<Model*> models);
 
 		void build();
 

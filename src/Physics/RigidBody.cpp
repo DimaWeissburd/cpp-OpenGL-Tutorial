@@ -2,8 +2,8 @@
 
 RigidBody::RigidBody() {}
 
-RigidBody::RigidBody(std::string* modelId, glm::vec3 size, float mass, glm::vec3 position)
-	: modelId(modelId), size(size), mass(mass), position(position), velocity(0.0f), acceleration(0.0f) {}
+RigidBody::RigidBody(std::string modelId, glm::vec3 size, float mass, glm::vec3 position)
+	: modelId(modelId), size(size), mass(mass), position(position), velocity(0.0f), acceleration(0.0f), state(0) {}
 
 void RigidBody::update(float dt) {
 	position += velocity * dt + 0.5f * acceleration * (dt * dt);

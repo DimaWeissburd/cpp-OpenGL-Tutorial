@@ -40,8 +40,8 @@ public:
         // Adjust bounding box to rotation
         glm::vec3 localMin(FLT_MAX), localMax(-FLT_MAX);
         for (auto& mesh : meshes) {
-            localMin = glm::min(localMin, mesh.br.min);
-            localMax = glm::max(localMax, mesh.br.max);
+            localMin = glm::min(localMin, mesh.boundingRegion.min);
+            localMax = glm::max(localMax, mesh.boundingRegion.max);
         }
 
         glm::vec3 worldMin(FLT_MAX), worldMax(-FLT_MAX);

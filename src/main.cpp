@@ -135,16 +135,10 @@ int main() {
         
         processInput(dt);
 
-        std::stack<unsigned int> removeObjects;
         for (int i = 0; i < sphere.currentNoInstances; i++) {
-            if (glm::length(camera.cameraPosition - sphere.instances[i].position) > 250.0f) {
-                removeObjects.push(i);
+            if (glm::length(camera.cameraPosition - sphere.instances[i]->position) > 250.0f) {
+                scene.markForDeletion(sphere.instances[i]->instanceId);
             }
-        }
-
-        while (removeObjects.size() != 0) {
-            sphere.removeInstance(removeObjects.top());
-            removeObjects.pop();
         }
 
         if (sphere.currentNoInstances > 0) {
@@ -155,6 +149,7 @@ int main() {
         scene.renderShader(lampShader);
         scene.renderInstances(lamp.id, lampShader, dt);
 
+        scene.clearDeadInstances();
         scene.newFrame();
     }
 
@@ -163,10 +158,10 @@ int main() {
 }
 
 void launchItem(float dt) {
-    std::string id = scene.generateInstance(sphere.id, glm::vec3(1.0f), 1.0f, camera.cameraPosition);
-    if (id != "") {
-        sphere.instances[scene.instances[id].second].transferEnergy(100.0f, camera.cameraFront);
-        sphere.instances[scene.instances[id].second].applyAcceleration(Environment::gravitationalAcceleration);
+    RigidBody* rb = scene.generateInstance(sphere.id, glm::vec3(1.0f), 1.0f, camera.cameraPosition);
+    if (rb) {
+        rb->transferEnergy(100.0f, camera.cameraFront);
+        rb->applyAcceleration(Environment::gravitationalAcceleration);
     }
 }
 

@@ -29,11 +29,11 @@ std::vector<Vertex> Vertex::genList(float* vertices, int noVertices) {
 
 Mesh::Mesh() {}
 
-Mesh::Mesh(BoundingRegion br, std::vector<Texture> textures)
-    : br(br), textures(textures), noTex(false) {}
+Mesh::Mesh(BoundingRegion boundingRegion, std::vector<Texture> textures)
+    : boundingRegion(boundingRegion), textures(textures), noTex(false) {}
 
-Mesh::Mesh(BoundingRegion br, aiColor4D diffuse, aiColor4D specular)
-    : br(br), diffuse(diffuse), specular(specular), noTex(true) {}
+Mesh::Mesh(BoundingRegion boundingRegion, aiColor4D diffuse, aiColor4D specular)
+    : boundingRegion(boundingRegion), diffuse(diffuse), specular(specular), noTex(true) {}
 
 void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices) {
     this->vertices = _vertices;

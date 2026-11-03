@@ -19,6 +19,7 @@ add_executable(
     src/Algorithms/Octree.cpp
     src/Algorithms/Octree.h
     src/Algorithms/States.hpp
+    src/Algorithms/Trie.hpp
     src/IO/Joystick.cpp
     src/IO/Joystick.h
     src/IO/Keyboard.cpp

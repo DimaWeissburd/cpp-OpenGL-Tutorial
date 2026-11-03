@@ -22,7 +22,7 @@ typedef struct Vertex Vertex;
 
 class Mesh {
 public:
-    BoundingRegion br;
+    BoundingRegion boundingRegion;
 
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;

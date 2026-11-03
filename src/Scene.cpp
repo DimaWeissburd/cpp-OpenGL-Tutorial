@@ -160,9 +160,9 @@ void Scene::renderInstances(std::string modelId, Shader shader, float dt) {
 }
 
 void Scene::cleanup() {
-	for (auto& pair : models) {
-		pair.second->cleanup();
-	}
+	models.traverse([](Model* model) -> void {
+		model->cleanup();
+	});
 
 	glfwTerminate();
 }
@@ -187,37 +187,48 @@ void Scene::setWindowColor(float r, float g, float b, float a) {
 }
 
 void Scene::registerModel(Model* model) {
-	models[model->id] = model;
+	models.insert(model->id, model);
 }
 
-std::string Scene::generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position) {
-	unsigned int idx = models[modelId]->generateInstance(size, mass, position);
-	if (idx != -1) {
+RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position) {
+	RigidBody* rb = models[modelId]->generateInstance(size, mass, position);
+	if (rb) {
 		std::string id = generateId();
-		models[modelId]->instances[idx].instanceId = id;
-		instances[id] = { modelId, idx };
-		return id;
+		rb->instanceId = id;
+		instances.insert(id, rb);
+		return rb;
 	}
-	return "";
+	return nullptr;
 }
 
 void Scene::initInstances() {
-	for (auto& pair : models) {
-		pair.second->initInstances();
-	}
+	models.traverse([](Model* model) -> void {
+		model->initInstances();
+	});
 }
 
 void Scene::loadModels() {
-	for (auto& pair : models) {
-		pair.second->init();
-	}
+	models.traverse([](Model* model) -> void {
+		model->init();
+	});
 }
 
-void Scene::removeInstances(std::string instanceId) {
-	std::string targetModel = instances[instanceId].first;
-	unsigned int targetIdx = instances[instanceId].second;
-
-	models[targetModel]->removeInstance(targetIdx);
-
+void Scene::removeInstance(std::string instanceId) {
+	std::string targetModel = instances[instanceId]->modelId;
+	models[targetModel]->removeInstance(instanceId);
+	instances[instanceId] = nullptr;
 	instances.erase(instanceId);
+}
+
+void Scene::markForDeletion(std::string instanceId) {
+	RigidBody* instance = instances[instanceId];
+	States::activate(&instance->state, INSTANCE_DEAD);
+	instancesToDelete.push_back(instance);
+}
+
+void Scene::clearDeadInstances() {
+	for (RigidBody* rb : instancesToDelete) {
+		removeInstance(rb->instanceId);
+	}
+	instancesToDelete.clear();
 }

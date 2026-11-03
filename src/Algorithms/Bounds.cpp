@@ -1,14 +1,5 @@
 #include "Bounds.h"
 
-BoundingRegion::BoundingRegion(BoundTypes type)
-	: type(type) {}
-
-BoundingRegion::BoundingRegion(glm::vec3 center, float radius)
-	:type(BoundTypes::SPHERE), center(center), radius(radius) {}
-
-BoundingRegion::BoundingRegion(glm::vec3 min, glm::vec3 max)
-	:type(BoundTypes::AABB), min(min), max(max) {}
-
 bool BoundingRegion::operator==(const BoundingRegion& br) const {
 	if (type != br.type) {
 		return false;
@@ -18,6 +9,34 @@ bool BoundingRegion::operator==(const BoundingRegion& br) const {
 	}
 	else {
 		return center == br.center && radius == br.radius;
+	}
+}
+
+BoundingRegion::BoundingRegion(BoundTypes type)
+	: type(type) {}
+
+BoundingRegion::BoundingRegion(glm::vec3 center, float radius)
+	:type(BoundTypes::SPHERE), center(center), ogCenter(center), radius(radius), ogRadius(radius){}
+
+BoundingRegion::BoundingRegion(glm::vec3 min, glm::vec3 max)
+	:type(BoundTypes::AABB), min(min), ogMin(min), max(max), ogMax(max) {}
+
+void BoundingRegion::transform() {
+	if (instance) {
+		if (type == BoundTypes::AABB) {
+			min = ogMin * instance->size + instance->position;
+			max = ogMax * instance->size + instance->position;
+		}
+		else {
+			center = ogCenter * instance->size + instance->position;
+			float maxDim = instance->size[0];
+			for (int i = 1; i < 3; i++) {
+				if (instance->size[i] > maxDim) {
+					maxDim = instance->size[i];
+				}
+			}
+			radius = ogRadius * maxDim;
+		}
 	}
 }
 

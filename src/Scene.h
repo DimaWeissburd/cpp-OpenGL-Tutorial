@@ -13,13 +13,16 @@
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
 #include <Algorithms/States.hpp>
+#include <Algorithms/Trie.hpp>
 
 class Model; // Forward declaration
 
 class Scene {
 public:
-	std::map<std::string, Model*> models;
-	std::map<std::string, std::pair<std::string, unsigned int>> instances;
+	Trie::Trie<Model*> models;
+	Trie::Trie<RigidBody*> instances;
+
+	std::vector<RigidBody*> instancesToDelete;
 
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
@@ -43,10 +46,12 @@ public:
 	void setWindowColor(float r, float g, float b, float a);
 
 	void registerModel(Model* model);
-	std::string generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position);
+	RigidBody* generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position);
 	void initInstances();
 	void loadModels();
-	void removeInstances(std::string instanceId);
+	void removeInstance(std::string instanceId);
+	void markForDeletion(std::string instanceId);
+	void clearDeadInstances();
 
 	std::string currentId;
 	std::string generateId();

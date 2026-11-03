@@ -64,12 +64,13 @@ public:
             indices[i] = i;
         }
 
-        BoundingRegion br(glm::vec3(-0.5f), glm::vec3(0.5f));
+        BoundingRegion boundingRegion(glm::vec3(-0.5f), glm::vec3(0.5f));
 
-        Mesh ret(br, {});
+        Mesh ret(boundingRegion, {});
         ret.loadData(Vertex::genList(vertices, noVertices), indices);
 
         meshes.push_back(ret);
+        boundingRegions.push_back(boundingRegion);
     }
 };
 

@@ -5,12 +5,12 @@
 Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, unsigned int flags)
     : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances) {}
 
-unsigned int Model::generateInstance(glm::vec3 size, float mass, glm::vec3 position) {
+RigidBody* Model::generateInstance(glm::vec3 size, float mass, glm::vec3 position) {
     if (currentNoInstances >= maxNoInstances) {
-        return -1;
+        return nullptr;
     }
-    instances.push_back(RigidBody(&id, size, mass, position));
-    return currentNoInstances++;
+    instances.push_back(new RigidBody(id, size, mass, position));
+    return instances[currentNoInstances++];
 }
 
 void Model::initInstances() {
@@ -22,8 +22,8 @@ void Model::initInstances() {
 
     if (States::isActive(&switches, CONST_INSTANCES)) {
         for (int i = 0; i < currentNoInstances; i++) {
-            positions.push_back(instances[i].position);
-            sizes.push_back(instances[i].size);
+            positions.push_back(instances[i]->position);
+            sizes.push_back(instances[i]->size);
         }
 
         if (positions.size() > 0) {
@@ -59,9 +59,16 @@ void Model::removeInstance(unsigned int idx) {
     currentNoInstances--;
 }
 
+void Model::removeInstance(std::string instanceId) {
+    int idx = getIdx(instanceId);
+    if (idx != -1) {
+        removeInstance(idx);
+    }
+}
+
 unsigned int Model::getIdx(std::string id) {
     for (int i = 0; i < currentNoInstances; i++) {
-        if (instances[i].instanceId == id) {
+        if (instances[i]->instanceId == id) {
             return i;
         }
     }
@@ -82,11 +89,14 @@ void Model::render(Shader shader, float dt, Scene* scene, bool setModel) {
 
         for (int i = 0; i < currentNoInstances; i++) {
             if (doUpdate) {
-                instances[i].update(dt);
+                instances[i]->update(dt);
+                States::activate(&instances[i]->state, INSTANCE_MOVED);
+            } else {
+                States::deactivate(&instances[i]->state, INSTANCE_MOVED);
             }
 
-            positions.push_back(instances[i].position);
-            sizes.push_back(instances[i].size);
+            positions.push_back(instances[i]->position);
+            sizes.push_back(instances[i]->size);
         }
 
         positionVBO.bind();
@@ -128,7 +138,9 @@ void Model::loadModel(std::string path) {
 void Model::processNode(aiNode* node, const aiScene* scene) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(mesh, scene));
+        Mesh newMesh = processMesh(mesh, scene);
+        meshes.push_back(newMesh);
+        boundingRegions.push_back(newMesh.boundingRegion);
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -179,9 +191,12 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 
     if (boundType == BoundTypes::AABB) {
         br.min = min;
+        br.ogMin = min;
         br.max = max;
+        br.ogMax = max;
     } else {
         br.center = BoundingRegion(min, max).calculateCenter();
+        br.ogCenter = br.center;
         float maxRadiusSquared = 0.0f;
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
             float radiusSquared = 0.0f;
@@ -193,6 +208,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             }
         }
         br.radius = sqrt(maxRadiusSquared);
+        br.ogRadius = br.radius;
     }
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
