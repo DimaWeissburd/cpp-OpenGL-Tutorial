@@ -14,7 +14,7 @@ target_include_directories(CPP_OpenGL_Tutorial PRIVATE
 
 target_link_directories(CPP_OpenGL_Tutorial PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Linking/lib")
 
-set(OpenGLLibs glfw3 opengl32 assimp-vc145-mtd)
+set(OpenGLLibs glfw3 opengl32 assimp-vc145-mtd freetype)
 target_link_libraries(CPP_OpenGL_Tutorial ${OpenGLLibs})
 
 add_custom_target(copy_assets ALL
