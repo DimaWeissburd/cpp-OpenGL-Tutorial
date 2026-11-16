@@ -21,6 +21,7 @@
 #include <IO/Mouse.h>
 #include <Physics/Environment.h>
 #include <Rendering/Camera.h>
+#include <Rendering/CubeMap.h>
 #include <Rendering/Light.h>
 #include <Rendering/Mesh.h>
 #include <Rendering/Model.h>
@@ -63,6 +64,15 @@ int main() {
     Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
     Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
     Shader textShader("Assets/Text.vs", "Assets/Text.fs");
+    Shader skyboxShader("Assets/SkyBox/SkyBox.vs", "Assets/SkyBox/Sky.fs");
+    skyboxShader.activate();
+    skyboxShader.set3Float("min", 0.047f, 0.016f, 0.239f);
+    skyboxShader.set3Float("max", 0.945f, 1.000f, 0.682f);
+
+
+    Cubemap skybox;
+    skybox.init();
+    skybox.loadTextures("Assets/SkyBox");
 
     Lamp lamp(4);
     scene.registerModel(&lamp);
@@ -149,6 +159,10 @@ int main() {
         
         processInput(dt);
 
+        skyboxShader.activate();
+        skyboxShader.setFloat("Time", scene.variableLog["Time"].val<float>());
+        skybox.render(skyboxShader, &scene);
+
         scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), 50.0f, 550.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
         scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), 50.0f, 500.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
 
@@ -173,6 +187,7 @@ int main() {
         scene.clearDeadInstances();
     }
 
+    skybox.cleanup();
     scene.cleanup();
     return 0;
 }
