@@ -68,6 +68,10 @@ public:
 		glBindVertexArray(value);
 	}
 
+	void draw(GLenum mode, GLuint first, GLuint count) {
+		glDrawArrays(mode, first, count);
+	}
+
 	void draw(GLenum mode, GLuint count, GLenum type, GLint indices, GLuint instanceCount = 1) {
 		glDrawElementsInstanced(mode, count, type, (void*)indices, instanceCount);
 	}

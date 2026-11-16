@@ -32,6 +32,13 @@ add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD
     "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>"
 )
 
+# Copy FreeType DLL post-build (only needed for dynamic builds)
+add_custom_command(TARGET CPP_OpenGL_Tutorial POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_SOURCE_DIR}/Linking/lib/freetype.dll"
+    "$<TARGET_FILE_DIR:CPP_OpenGL_Tutorial>"
+)
+
 # MSVC Subsystem configuration for Windows GUI/Console apps
 if(MSVC)
     set_target_properties(CPP_OpenGL_Tutorial PROPERTIES 

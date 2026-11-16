@@ -1,3 +1,7 @@
+// Following C++ OpenGL Tutorial by Michael Grieco
+// https://github.com/michaelgrieco/yt-tutorials/tree/master/CPP/OpenGL/OpenGLTutorial
+// https://www.youtube.com/playlist?list=PLysLvOneEETPlOI_PI4mJnocqIpr2cSHS
+
 #include <ft2build.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -58,6 +62,7 @@ int main() {
     Shader shader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
     Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
     Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
+    Shader textShader("Assets/Text.vs", "Assets/Text.fs");
 
     Lamp lamp(4);
     scene.registerModel(&lamp);
@@ -130,14 +135,22 @@ int main() {
         std::cout << "Joystick not present." << std::endl;
     }
 
+    scene.variableLog["Time"] = (double)0.0;
+
     while (!scene.shouldClose()) {
         double currentTime = glfwGetTime();
         dt = currentTime - lastFrame;
         lastFrame = currentTime;
 
+        scene.variableLog["Time"] += dt;
+        scene.variableLog["FPS"] = 1 / dt;
+
         scene.update();
         
         processInput(dt);
+
+        scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), 50.0f, 550.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
+        scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), 50.0f, 500.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
 
         for (int i = 0; i < sphere.currentNoInstances; i++) {
             if (glm::length(camera.cameraPosition - sphere.instances[i]->position) > 250.0f) {

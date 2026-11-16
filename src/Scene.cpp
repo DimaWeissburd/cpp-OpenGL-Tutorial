@@ -65,9 +65,25 @@ bool Scene::init() {
 	glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	octree = new Octree::node(BoundingRegion(glm::vec3(-16.0f), glm::vec3(16.0f)));
+
+	if (FT_Init_FreeType(&ft)) {
+		std::cout << "Could not init FreeType library" << std::endl;
+		return false;
+	}
+
+	fonts.insert("Helvetica", TextRenderer(32));
+	if (!fonts["Helvetica"].loadFont(ft, "Assets/Fonts/Helvetica.ttf")) {
+		std::cout << "Could not load font" << std::endl;
+		return false;
+	}
+
+	FT_Done_FreeType(ft);
 
 	return true;
 }
@@ -114,6 +130,7 @@ void Scene::processInput(float dt) {
 			(float)screenWidth / (float)screenHeight,
 			0.1f, 100.0f
 		);
+		textProjection = glm::ortho(0.0f, (float)screenWidth, 0.0f, (float)screenHeight);
 
 		cameraPosition = cameras[activeCamera]->cameraPosition;
 	}
@@ -171,10 +188,25 @@ void Scene::renderInstances(std::string modelId, Shader shader, float dt) {
 	models[modelId]->render(shader, dt, this);
 }
 
+void Scene::renderText(std::string font, Shader shader, std::string text, float x, float y, glm::vec2 scale, glm::vec3 color) {
+	shader.activate();
+	shader.setMat4("projection", textProjection);
+	fonts[font].render(shader, text, x, y, scale, color);
+}
+
 void Scene::cleanup() {
 	models.traverse([](Model* model) -> void {
 		model->cleanup();
 	});
+
+	models.cleanup();
+	instances.cleanup();
+
+	fonts.traverse([](TextRenderer tr) -> void {
+		tr.cleanup();
+	});
+
+	fonts.cleanup();
 
 	octree->destroy();
 

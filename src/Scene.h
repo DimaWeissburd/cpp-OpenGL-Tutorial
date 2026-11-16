@@ -6,10 +6,14 @@
 #include <map>
 #include <vector>
 #include <glm/glm.hpp>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include <jsoncpp/json.hpp>
 #include <Rendering/Camera.h>
 #include <Rendering/Model.h>
 #include <Rendering/Light.h>
 #include <Rendering/Shader.h>
+#include <Rendering/Text.h>
 #include <Rendering/Models/Box.hpp>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
@@ -31,6 +35,11 @@ public:
 
 	Octree::node* octree;
 
+	jsoncpp::json variableLog;
+
+	FT_Library ft;
+	Trie::Trie<TextRenderer> fonts;
+
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	Scene();
@@ -45,6 +54,7 @@ public:
 	void newFrame(Box& box);
 	void renderShader(Shader shader, bool applyLighting = true);
 	void renderInstances(std::string modelId, Shader shader, float dt);
+	void renderText(std::string font, Shader shader, std::string text, float x, float y, glm::vec2 scale, glm::vec3 color);
 
 	void cleanup();
 
@@ -76,6 +86,7 @@ public:
 	int activeCamera;
 	glm::mat4 view;
 	glm::mat4 projection;
+	glm::mat4 textProjection;
 	glm::vec3 cameraPosition;
 protected:
 	GLFWwindow* window;
