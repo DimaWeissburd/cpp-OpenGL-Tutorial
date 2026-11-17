@@ -26,6 +26,8 @@ namespace Octree {
 }
 class Model;
 
+class IniFile;
+
 class Scene {
 public:
 	Trie::Trie<Model*> models;
@@ -42,8 +44,8 @@ public:
 
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
-	Scene();
-	Scene(int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight);
+	Scene(const IniFile& ini);
+	Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight);
 
 	bool init();
 
@@ -88,6 +90,9 @@ public:
 	glm::mat4 projection;
 	glm::mat4 textProjection;
 	glm::vec3 cameraPosition;
+
+	bool useGammaCorrection;
+
 protected:
 	GLFWwindow* window;
 	const char* title;

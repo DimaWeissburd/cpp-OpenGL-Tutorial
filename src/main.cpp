@@ -32,9 +32,11 @@
 #include <Rendering/Models/HandHeld.hpp>
 #include <Rendering/Models/Lamp.hpp>
 #include <Rendering/Models/Sphere.hpp>
+#include <Utility/IniFile.h>
 
-Scene scene;
-Camera camera;
+IniFile ini("Settings.ini");
+Scene scene(ini);
+Camera camera(ini);
 
 void processInput(double dt);
 
@@ -46,11 +48,12 @@ Sphere sphere(10);
 
 Joystick joystick(0);
 
-unsigned int SCR_WIDTH = 800;
-unsigned int SCR_HEIGHT = 600;
+unsigned int SCR_WIDTH = ini.getInt("window", "width", 800);
+unsigned int SCR_HEIGHT = ini.getInt("window", "height", 600);
+std::string title = ini.getString("window", "title", "OpenGL Tutorial");
 
 int main() {
-    scene = Scene(3, 3, "OpenGL Tutorial", 800, 600);
+    scene = Scene(ini, 3, 3, title.c_str(), SCR_WIDTH, SCR_HEIGHT);
 
     scene.cameras.push_back(&camera);
     scene.activeCamera = 0;
@@ -78,6 +81,9 @@ int main() {
     scene.registerModel(&lamp);
 
     scene.registerModel(&sphere);
+
+    Cube cube(1);
+    scene.registerModel(&cube);
 
     Box box;
     box.init();
@@ -123,17 +129,19 @@ int main() {
         };
         scene.generateInstance(lamp.id, glm::vec3(0.25f), 0.25, pointLightPositions[i]);
         scene.pointLights.push_back(&pointLights[i]);
-        States::activate(&scene.activePointLights, i);
+        States::activateIndex(&scene.activePointLights, i);
     }
 
     SpotLight spotLight = {
         scene.getActiveCamera()->cameraPosition, scene.getActiveCamera()->cameraFront,
         glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(20.0f)),
-        1.0f, 0.07f, 0.032f,
+        1.0f, 0.0014f, 000007,
         glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
     };
     scene.spotLights.push_back(&spotLight);
     scene.activeSpotLights = 1;
+
+    scene.generateInstance(cube.id, glm::vec3(20.0f, 0.1f, 20.0f), 101.0f, glm::vec3(0.0f, -0.3f, 0.0f));
 
     scene.initInstances();
     scene.prepare(box);
@@ -172,10 +180,11 @@ int main() {
             }
         }
 
+        scene.renderShader(shader);
         if (sphere.currentNoInstances > 0) {
-            scene.renderShader(shader);
             scene.renderInstances(sphere.id, shader, dt);
         }
+        scene.renderInstances(cube.id, shader, dt);
 
         scene.renderShader(lampShader, false);
         scene.renderInstances(lamp.id, lampShader, dt);
@@ -195,7 +204,7 @@ int main() {
 void launchItem(float dt) {
     RigidBody* rb = scene.generateInstance(sphere.id, glm::vec3(0.1f), 1.0f, camera.cameraPosition);
     if (rb) {
-        rb->transferEnergy(1000.0f, camera.cameraFront);
+        rb->transferEnergy(50.0f, camera.cameraFront);
         rb->applyAcceleration(Environment::gravitationalAcceleration);
     }
 }
@@ -205,6 +214,11 @@ void processInput(double dt) {
 
     if (Keyboard::key(GLFW_KEY_ESCAPE)) {
         scene.setShouldClose(true);
+    }
+
+    if (States::isIndexActive(&scene.activeSpotLights, 0)) {
+        scene.spotLights[0]->position = scene.getActiveCamera()->cameraPosition;
+        scene.spotLights[0]->direction = scene.getActiveCamera()->cameraFront;
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_F)) {

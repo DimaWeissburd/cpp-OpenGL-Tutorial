@@ -1,6 +1,7 @@
 #include "Camera.h"
+#include "Utility/IniFile.h"
 
-Camera::Camera(glm::vec3 position)
+Camera::Camera(const IniFile& ini, glm::vec3 position)
     : cameraPosition(position)
      ,cameraFront(glm::vec3(1.0f, 0.0f, 0.0f))
      ,worldUp(glm::vec3(0.0f, 1.0f, 0.0f))

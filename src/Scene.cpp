@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Utility/IniFile.h"
 
 unsigned int Scene::screenWidth = 0;
 unsigned int Scene::screenHeight = 0;
@@ -21,13 +22,14 @@ void Scene::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	Scene::screenHeight = height;
 }
 
-Scene::Scene() 
-: activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false), currentId("aaaaaaaa") {}
+Scene::Scene(const IniFile& ini)
+: activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
+  currentId("aaaaaaaa"), useGammaCorrection(ini.getBool("graphics", "use_gamma_correction", true)) {}
 
-Scene::Scene(int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight)
+Scene::Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight)
 : glfwVersionMajor(glfwVersionMajor), glfwVersionMinor(glfwVersionMinor), title(title), activeCamera(-1),
   activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
-  currentId("aaaaaaaa") {
+  currentId("aaaaaaaa"), useGammaCorrection(ini.getBool("graphics", "use_gamma_correction", true)) {
 	Scene::screenWidth = screenWidth;
 	Scene::screenHeight = screenHeight;
 	setWindowColor(0.1f, 0.15f, 0.15f, 1.0f);
@@ -84,6 +86,8 @@ bool Scene::init() {
 	}
 
 	FT_Done_FreeType(ft);
+
+	variableLog["useGammaCorrection"] = useGammaCorrection;
 
 	return true;
 }
@@ -163,7 +167,7 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		unsigned int nLights = pointLights.size();
 		unsigned int nActiveLights = 0;
 		for (unsigned int i = 0; i < nLights; i++) {
-			if (States::isActive(&activePointLights, i)) {
+			if (States::isIndexActive(&activePointLights, i)) {
 				pointLights[i]->render(shader, nActiveLights);
 				nActiveLights++;
 			}
@@ -173,7 +177,7 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		nLights = spotLights.size();
 		nActiveLights = 0;
 		for (unsigned int i = 0; i < nLights; i++) {
-			if (States::isActive(&activeSpotLights, i)) {
+			if (States::isIndexActive(&activeSpotLights, i)) {
 				spotLights[i]->render(shader, nActiveLights);
 				nActiveLights++;
 			}
@@ -181,6 +185,8 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		shader.setInt("nSpotLights", nActiveLights);
 
 		directionalLight->render(shader);
+
+		shader.setBool("useGammaCorrection", variableLog["useGammaCorrection"].val<bool>());
 	}
 }
 

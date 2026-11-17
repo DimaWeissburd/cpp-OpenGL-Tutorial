@@ -14,6 +14,8 @@ enum class CameraDirection {
     DOWN
 };
 
+class IniFile;
+
 class Camera {
 public:
     glm::vec3 cameraPosition;
@@ -29,7 +31,7 @@ public:
     float speed;
     float zoom;
 
-    Camera(glm::vec3 position = glm::vec3(0.0f));
+    Camera(const IniFile& ini, glm::vec3 position = glm::vec3(0.0f));
 
     void updateCameraDirection(double dx, double dy);
     void updateCameraPosition(CameraDirection direction, double dt);
