@@ -2,14 +2,14 @@
 #include "../Physics/Environment.h"
 #include "../Algorithms/States.hpp"
 
-Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, unsigned int flags)
-    : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances) {}
+Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags)
+    : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass) {}
 
-RigidBody* Model::generateInstance(glm::vec3 size, float mass, glm::vec3 position) {
+RigidBody* Model::generateInstance(glm::vec3 position, glm::vec3 size, float mass) {
     if (currentNoInstances >= maxNoInstances) {
         return nullptr;
     }
-    instances.push_back(new RigidBody(id, size, mass, position));
+    instances.push_back(new RigidBody(id, position, size, mass));
     return instances[currentNoInstances++];
 }
 
@@ -79,7 +79,19 @@ void Model::init() {}
 
 void Model::render(Shader shader, float dt, Scene* scene, bool setModel) {
     if (setModel) {
-        shader.setMat4("model", glm::mat4(1.0f));
+        glm::mat4 model(1.0f);
+
+        if (!instances.empty() && rotation != glm::vec3(0.0f)) {
+            // rotate around the instance's own position, not the world origin
+            glm::vec3 p = instances[0]->position;
+            model = glm::translate(model, p);
+            model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0, 0, 1));
+            model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0, 1, 0));
+            model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1, 0, 0));
+            model = glm::translate(model, -p);
+        }
+
+        shader.setMat4("model", model);
     }
 
     if (!States::isActive(&switches, CONST_INSTANCES)) {

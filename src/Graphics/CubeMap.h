@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include "Shader.h"
-#include "GLMemory.hpp"
+#include "VertexMemory.hpp"
 
 class Scene;
 

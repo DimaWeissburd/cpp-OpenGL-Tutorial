@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include "Shader.h"
 #include "Texture.h"
-#include "GLMemory.hpp"
+#include "VertexMemory.hpp"
 #include "Models/Box.hpp"
 #include "../Algorithms/Bounds.h"
 
@@ -36,7 +36,7 @@ public:
     Mesh(BoundingRegion br, std::vector<Texture> textures = {});
     Mesh(BoundingRegion br, aiColor4D diff, aiColor4D spec);
 
-    void loadData(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
+    void loadData(std::vector<Vertex> vertices, std::vector<unsigned int> indices, bool pad = false);
 
     void render(Shader shader, unsigned int noInstances);
 

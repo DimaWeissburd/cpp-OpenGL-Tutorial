@@ -94,10 +94,19 @@ void main() {
         result += calcSpotLight(i, norm, viewDirection, diffuseMap, specularMap);
     }
 
+    // Depth testing
     if (useGammaCorrection) {
         float gamma = 2.2;
         result.rgb = pow(result.rgb, vec3(1.0 / gamma));
     }
+
+    float near = 0.1;
+    float far = 100.0;
+    float z = gl_FragCoord.z * 2.0 - 1.0; // Transform to NDC(Normalized Device Coordinated) [0, 1] => [-1, 1]
+    float linearDepth = (2.0 * near * far) / (z * (far - near) - (far + near)); // The the inverse of the projection matrix (perspective)
+    float factor = (near + linearDepth) / (near - far); // Convert back to [0, 1]
+
+    result.rgb *= 1 - factor;
 
 	FragColor = result;
 }

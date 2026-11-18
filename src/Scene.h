@@ -9,12 +9,13 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <jsoncpp/json.hpp>
-#include <Rendering/Camera.h>
-#include <Rendering/Model.h>
-#include <Rendering/Light.h>
-#include <Rendering/Shader.h>
-#include <Rendering/Text.h>
-#include <Rendering/Models/Box.hpp>
+#include <Graphics/Camera.h>
+#include <Graphics/FrameMemory.hpp>
+#include <Graphics/Light.h>
+#include <Graphics/Model.h>
+#include <Graphics/Shader.h>
+#include <Graphics/Text.h>
+#include <Graphics/Models/Box.hpp>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
 #include <Algorithms/Octree.h>
@@ -42,6 +43,8 @@ public:
 	FT_Library ft;
 	Trie::Trie<TextRenderer> fonts;
 
+	FramebufferObject defaultFBO;
+
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	Scene(const IniFile& ini);
@@ -67,7 +70,7 @@ public:
 	void setWindowColor(float r, float g, float b, float a);
 
 	void registerModel(Model* model);
-	RigidBody* generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position);
+	RigidBody* generateInstance(std::string modelId, glm::vec3 position, glm::vec3 size, float mass);
 	void initInstances();
 	void loadModels();
 	void removeInstance(std::string instanceId);

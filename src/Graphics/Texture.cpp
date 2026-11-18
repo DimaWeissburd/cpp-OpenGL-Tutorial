@@ -1,7 +1,10 @@
 #include "Texture.h"
 #include <iostream>
 
-Texture::Texture() {}
+Texture::Texture(std::string name)
+    : name(name), type(aiTextureType_NONE) {
+    generate();
+}
 
 Texture::Texture(std::string dir, std::string path, aiTextureType type)
     : dir(dir), path(path), type(type) {
@@ -46,6 +49,21 @@ void Texture::load(bool flip) {
     stbi_image_free(data);
 }
 
+void Texture::allocate(GLenum format, GLuint width, GLuint height, GLenum type) {
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, type, NULL);
+}
+
+void Texture::setParams(GLenum texMinFilter, GLenum texMagFilter, GLenum wrapS, GLenum wrapT) {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texMinFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texMagFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+}
+
 void Texture::bind() {
     glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void Texture::cleanup() {
+    glDeleteTextures(1, &id);
 }

@@ -6,7 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include "../GLMemory.hpp"
+#include "../VertexMemory.hpp"
 #include "../../Algorithms/Bounds.h"
 #include "../Shader.h"
 

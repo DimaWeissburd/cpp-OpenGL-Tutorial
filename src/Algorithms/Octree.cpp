@@ -1,5 +1,5 @@
 #include "Octree.h"
-#include "../Rendering/Models/Box.hpp"
+#include "../Graphics/Models/Box.hpp"
 
 void Octree::calculateBounds(BoundingRegion& out, Octant octant, BoundingRegion parentRegion) {
     glm::vec3 center = parentRegion.calculateCenter();

@@ -35,7 +35,7 @@ Mesh::Mesh(BoundingRegion boundingRegion, std::vector<Texture> textures)
 Mesh::Mesh(BoundingRegion boundingRegion, aiColor4D diffuse, aiColor4D specular)
     : boundingRegion(boundingRegion), diffuse(diffuse), specular(specular), noTex(true) {}
 
-void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices) {
+void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, bool pad) {
     this->vertices = _vertices;
     this->indices = _indices;
 
@@ -50,7 +50,13 @@ void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _in
     VAO["VBO"] = BufferObject(GL_ARRAY_BUFFER);
     VAO["VBO"].generate();
     VAO["VBO"].bind();
-    VAO["VBO"].setData<Vertex>(this->vertices.size(), &this->vertices[0], GL_STATIC_DRAW);
+
+    unsigned int size = this->vertices.size();
+    if (pad && size) {
+        size++;
+    }
+
+    VAO["VBO"].setData<Vertex>(size, &this->vertices[0], GL_STATIC_DRAW);
 
     VAO["VBO"].bind();
     VAO["VBO"].setAttPointer<GLfloat>(0, 3, GL_FLOAT, 8, 0);
@@ -82,6 +88,9 @@ void Mesh::render(Shader shader, unsigned int noInstances) {
                 break;
             case aiTextureType_SPECULAR:
                 name = "specular" + std::to_string(specularIdx++);
+                break;
+            case aiTextureType_NONE:
+                name = textures[i].name;
                 break;
             }
 
@@ -122,4 +131,7 @@ void Mesh::setup() {
 
 void Mesh::cleanup() {
     VAO.cleanup();
+    for (Texture t : textures) {
+        t.cleanup();
+    }
 }

@@ -32,6 +32,7 @@ Scene::Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, con
   currentId("aaaaaaaa"), useGammaCorrection(ini.getBool("graphics", "use_gamma_correction", true)) {
 	Scene::screenWidth = screenWidth;
 	Scene::screenHeight = screenHeight;
+	defaultFBO = FramebufferObject(screenWidth, screenHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	setWindowColor(0.1f, 0.15f, 0.15f, 1.0f);
 }
 
@@ -66,9 +67,17 @@ bool Scene::init() {
 	glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
 	glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
 
+	// Depth testing
 	glEnable(GL_DEPTH_TEST);
+
+	// Blending for text textures
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Stencil testing
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // Replace fragments only if both stencil and depth pass
+
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -88,6 +97,7 @@ bool Scene::init() {
 	FT_Done_FreeType(ft);
 
 	variableLog["useGammaCorrection"] = useGammaCorrection;
+	variableLog["displayOutlines"] = false;
 
 	return true;
 }
@@ -142,7 +152,7 @@ void Scene::processInput(float dt) {
 
 void Scene::update() {
 	glClearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	defaultFBO.clear();
 }
 
 void Scene::newFrame(Box& box) {
@@ -191,6 +201,7 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 }
 
 void Scene::renderInstances(std::string modelId, Shader shader, float dt) {
+	shader.activate();
 	models[modelId]->render(shader, dt, this);
 }
 
@@ -242,8 +253,8 @@ void Scene::registerModel(Model* model) {
 	models.insert(model->id, model);
 }
 
-RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 size, float mass, glm::vec3 position) {
-	RigidBody* rigidBody = models[modelId]->generateInstance(size, mass, position);
+RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 position, glm::vec3 size, float mass) {
+	RigidBody* rigidBody = models[modelId]->generateInstance(position, size, mass);
 	if (rigidBody) {
 		std::string id = generateId();
 		rigidBody->instanceId = id;

@@ -8,7 +8,7 @@
 #include "States.hpp"
 #include "Bounds.h"
 #include "Trie.hpp"
-#include "../Rendering/Model.h"
+#include "../Graphics/Model.h"
 
 #define NO_CHILDREN 8
 #define MIN_BOUNDS 0.5

@@ -8,8 +8,8 @@ class Cube : public Model {
 public:
     Material material;
 
-    Cube(unsigned int maxNoInstances)
-        : Model("cube", BoundTypes::AABB, maxNoInstances, CONST_INSTANCES | NO_TEX) {}
+    Cube(unsigned int maxNoInstances, glm::vec3 rotation, glm::vec3 size, float mass)
+        : Model("cube", BoundTypes::AABB, maxNoInstances, glm::vec3(0.0f), rotation, size, mass, CONST_INSTANCES | NO_TEX) {}
 
     void init() {
         int noVertices = 36;

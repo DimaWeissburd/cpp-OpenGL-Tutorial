@@ -20,7 +20,7 @@ public:
 
 	RigidBody();
 
-	RigidBody(std::string modelId, glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f, glm::vec3 position = glm::vec3(0.0f));
+	RigidBody(std::string modelId, glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f);
 
 	void update(float dt);
 

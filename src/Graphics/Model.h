@@ -25,8 +25,10 @@ class Model {
 public:
     std::string id;
     RigidBody rb;
+    glm::vec3 position;
     glm::vec3 rotation;
     glm::vec3 size;
+    float mass;
 
     BoundTypes boundType;
 
@@ -40,11 +42,11 @@ public:
 
     unsigned int switches;
 
-    Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, unsigned int flags = 0);
+    Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags = 0);
 
     virtual void init();
 
-    RigidBody* generateInstance(glm::vec3 size, float mass, glm::vec3 position);
+    RigidBody* generateInstance(glm::vec3 position, glm::vec3 size, float mass);
 
     void initInstances();
 

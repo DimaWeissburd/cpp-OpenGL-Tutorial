@@ -8,7 +8,7 @@
 #include FT_FREETYPE_H
 #include <string>
 #include <map>
-#include "GLMemory.hpp"
+#include "VertexMemory.hpp"
 #include "Shader.h"
 
 typedef struct {

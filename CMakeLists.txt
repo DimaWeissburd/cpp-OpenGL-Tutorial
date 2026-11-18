@@ -17,7 +17,6 @@ target_link_directories(CPP_OpenGL_Tutorial PRIVATE
 )
  
 # Assimp: debug and release builds are different libraries/DLLs.
-# Adjust the release names if yours differ.
 set(ASSIMP_LIB_DEBUG   assimp-vc145-mtd)
 set(ASSIMP_LIB_RELEASE assimp-vc145-mt)
  
