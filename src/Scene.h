@@ -58,6 +58,7 @@ public:
 	void update();
 	void newFrame(Box& box);
 	void renderShader(Shader shader, bool applyLighting = true);
+	void renderDirectionalLightShader(Shader shader);
 	void renderInstances(std::string modelId, Shader shader, float dt);
 	void renderText(std::string font, Shader shader, std::string text, float x, float y, glm::vec2 scale, glm::vec3 color);
 

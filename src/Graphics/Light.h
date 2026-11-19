@@ -3,13 +3,24 @@
 
 #include <glm/glm.hpp>
 #include "Shader.h"
+#include "../Algorithms/Bounds.h"
+#include "FrameMemory.hpp"
 
 struct DirectionalLight {
     glm::vec3 direction;
     glm::vec4 ambient;
     glm::vec4 diffuse;
     glm::vec4 specular;
-    void render(Shader shader);
+
+    BoundingRegion br;
+    glm::mat4 lightSpaceMatrix;
+    FramebufferObject shadowFBO;
+
+    DirectionalLight(glm::vec3 direction, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, BoundingRegion br);
+
+    void render(Shader shader, unsigned int textureIdx);
+
+    void updateMatrices();
 };
 
 struct PointLight {

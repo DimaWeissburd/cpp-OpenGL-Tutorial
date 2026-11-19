@@ -41,11 +41,16 @@ Scene scene(ini);
 Camera camera(ini);
 
 void processInput(double dt);
+void renderScene(Shader shader);
 
 float dt = 0.0f;
 float lastFrame = 0.0f;
 
 Sphere sphere(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
+Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
+
+HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
+Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::vec3(-90.0f, -90.0f, 0.0f), glm::vec3(-20.0f, 20.0f, 20.0f), 1.0f, CONST_INSTANCES);
 
 Joystick joystick(0);
 
@@ -64,13 +69,14 @@ int main() {
         glfwTerminate();
         return -1;
     }
-    Shader shader("Assets/Instanced/Instanced.vs", "Assets/Object.fs");
-    Shader lampShader("Assets/Instanced/Instanced.vs", "Assets/Lamp.fs");
-    Shader boxShader("Assets/Instanced/Box.vs", "Assets/Instanced/Box.fs");
-    Shader textShader("Assets/Text.vs", "Assets/Text.fs");
+    Shader shader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Object.fs");
+    Shader lampShader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Lamp.fs");
+    Shader boxShader("Assets/Shaders/Instanced/Box.vs", "Assets/Shaders/Instanced/Box.fs");
+    Shader directionalLightShader("Assets/Shaders/Shadows/DirectionalShadow.vs", "Assets/Shaders/Shadows/DirectionalShadow.fs");
+    Shader textShader("Assets/Shaders/Text.vs", "Assets/Shaders/Text.fs");
     Shader skyboxShader("Assets/SkyBox/SkyBox.vs", "Assets/SkyBox/Sky.fs");
-    Shader outlineShader("Assets/Outline.vs", "Assets/Outline.fs");
-    Shader bufferShader("Assets/Buffer.vs", "Assets/Buffer.fs");
+    Shader outlineShader("Assets/Shaders/Outline.vs", "Assets/Shaders/Outline.fs");
+    Shader bufferShader("Assets/Shaders/Buffer.vs", "Assets/Shaders/Buffer.fs");
 
     skyboxShader.activate();
     skyboxShader.set3Float("min", 0.047f, 0.016f, 0.239f);
@@ -85,39 +91,22 @@ int main() {
 
     scene.registerModel(&sphere);
 
-    Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
     scene.registerModel(&cube);
 
     Box box;
     box.init();
 
-    const GLuint BUFFER_WIDTH = 800, BUFFER_HEIGHT = 600;
-    FramebufferObject fbo(BUFFER_WIDTH, BUFFER_HEIGHT, GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    fbo.generate();
-    fbo.bind();
-
-    Texture bufferTex("bufferTex");
-    bufferTex.bind();
-    bufferTex.allocate(GL_RGBA, BUFFER_WIDTH, BUFFER_HEIGHT, GL_UNSIGNED_BYTE);
-    Texture::setParams();
-
-    fbo.attachTexture(GL_COLOR_ATTACHMENT0, bufferTex);
-    fbo.allocateAndAttachRBO(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "Error with framebuffer" << std::endl;
-    }
-
-    scene.defaultFBO.bind();
+    DirectionalLight directionalLight(glm::vec3(-0.2f, -0.9f, -0.2f),
+        glm::vec4(0.1f, 0.1f, 0.1f, 1.0f),
+        glm::vec4(0.6f, 0.6f, 0.6f, 1.0f),
+        glm::vec4(0.75f, 0.75f, 0.75f, 1.0f),
+        BoundingRegion(glm::vec3(-20.0f, -20.0f, 0.5f), glm::vec3(20.0f, 20.0f, 50.0f)));
 
     Plane map;
-    map.init(bufferTex);
+    map.init(directionalLight.shadowFBO.textures[0]);
     scene.registerModel(&map);
 
     scene.loadModels();
-
-    DirectionalLight directionalLight = { glm::vec3(-0.2f, -1.0f, -0.3f),
-        glm::vec4(0.1f, 0.1f, 0.1f, 1.0f), glm::vec4(0.4f, 0.4f, 0.4f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f) };
 
     scene.directionalLight = &directionalLight;
     scene.activeSpotLights = 0;
@@ -176,12 +165,10 @@ int main() {
 
     scene.generateInstance(map.id, glm::vec3(0.0f), glm::vec3(2.0f, 2.0f, 0.0f), 0.0f);
 
-    HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
     magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
     scene.registerModel(&magicStaff);
     scene.generateInstance(magicStaff.id, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 
-    Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::vec3(-90.0f, -90.0f, 0.0f), glm::vec3(-20.0f, 20.0f, 20.0f), 1.0f, CONST_INSTANCES);
     fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
     scene.registerModel(&fox);
     scene.generateInstance(fox.id, fox.position, fox.size, fox.mass);
@@ -198,6 +185,8 @@ int main() {
 
     scene.variableLog["Time"] = (double)0.0;
 
+    scene.defaultFBO.bind();
+
     while (!scene.shouldClose()) {
         double currentTime = glfwGetTime();
         dt = currentTime - lastFrame;
@@ -210,7 +199,7 @@ int main() {
         
         processInput(dt);
 
-        fbo.activate();
+        fox.rotation.y += 10.0f * dt;
 
         skyboxShader.activate();
         skyboxShader.setFloat("Time", scene.variableLog["Time"].val<float>());
@@ -225,49 +214,23 @@ int main() {
             }
         }
 
-        if (scene.variableLog["displayOutlines"].val<bool>()) {
-            glStencilMask(0x00); // Disable writing to stencil buffer for spheres
-        }
-
-        // Render lamps
         scene.renderShader(lampShader, false);
         scene.renderInstances(lamp.id, lampShader, dt);
         
-        scene.renderShader(shader);
-        if (sphere.currentNoInstances > 0) {
-            scene.renderInstances(sphere.id, shader, dt);
-        }
+        // Render scene for directional light FBO
+        directionalLight.shadowFBO.activate();
+        scene.renderDirectionalLightShader(directionalLightShader);
+        renderScene(directionalLightShader);
 
-        fox.rotation.y += 10.0f * dt;
-        scene.renderInstances(fox.id, shader, dt);
-        scene.renderInstances(magicStaff.id, shader, dt);
-
-        if (scene.variableLog["displayOutlines"].val<bool>()) {
-            glStencilFunc(GL_ALWAYS, 1, 0xFF); // Always write to stencil buffer for cubes
-            glStencilMask(0xFF); // Always write to buffer
-            scene.renderInstances(cube.id, shader, dt);
-
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // Render fragments if different than what is stored
-            glStencilMask(0x00); // Disable writing
-            glDisable(GL_DEPTH_TEST); // Disable depth test so outlines are displayed behind
-
-            // Draw outline of the cubes
-            scene.renderShader(outlineShader, false);
-            scene.renderInstances(cube.id, outlineShader, dt);
-
-            glStencilFunc(GL_ALWAYS, 1, 0xFF); // Every fragment written to stencil buffer
-            glStencilMask(0xFF); // Always write to buffer
-            glEnable(GL_DEPTH_TEST); // Reenable depth testing
-        } else { // Render cubes normally
-            scene.renderInstances(cube.id, shader, dt);
-        }
-
-        scene.renderShader(boxShader, false);
-        box.render(boxShader);
-
+        // Render scene normally
         scene.defaultFBO.activate();
-        
-        scene.renderInstances(map.id, bufferShader, dt);
+        scene.renderShader(shader);
+        renderScene(shader);
+
+        if (ini.getBool("debug", "show_bounding_boxes", false)) {
+            scene.renderShader(boxShader, false);
+            box.render(boxShader);
+        }
 
         scene.newFrame(box);
         scene.clearDeadInstances();
@@ -276,13 +239,23 @@ int main() {
     fox.cleanup();
     magicStaff.cleanup();
     skybox.cleanup();
-    fbo.cleanup();
     scene.cleanup();
     return 0;
 }
 
+void renderScene(Shader shader) {
+    if (sphere.currentNoInstances > 0) {
+        scene.renderInstances(sphere.id, shader, dt);
+    }
+
+    scene.renderInstances(cube.id, shader, dt);
+
+    scene.renderInstances(fox.id, shader, dt);
+    scene.renderInstances(magicStaff.id, shader, dt);
+}
+
 void launchItem(float dt) {
-    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.1f), 1.0f);
+    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.5f), 1.0f);
     if (rb) {
         rb->transferEnergy(50.0f, camera.cameraFront);
         rb->applyAcceleration(Environment::gravitationalAcceleration);
@@ -313,9 +286,5 @@ void processInput(double dt) {
         if (Keyboard::keyPressed(GLFW_KEY_1 + i)) {
             States::toggleIndex(&scene.activePointLights, i);
         }
-    }
-
-    if (Keyboard::keyPressed(GLFW_KEY_O)) {
-        scene.variableLog["displayOutlines"] = !scene.variableLog["displayOutlines"].val<bool>();
     }
 }

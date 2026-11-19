@@ -97,7 +97,6 @@ bool Scene::init() {
 	FT_Done_FreeType(ft);
 
 	variableLog["useGammaCorrection"] = useGammaCorrection;
-	variableLog["displayOutlines"] = false;
 
 	return true;
 }
@@ -174,6 +173,10 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 	shader.set3Float("viewPosition", cameraPosition);
 
 	if (applyLighting) {
+		unsigned int texturesIdx = 31;
+
+		directionalLight->render(shader, texturesIdx--);
+
 		unsigned int nLights = pointLights.size();
 		unsigned int nActiveLights = 0;
 		for (unsigned int i = 0; i < nLights; i++) {
@@ -194,10 +197,13 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		}
 		shader.setInt("nSpotLights", nActiveLights);
 
-		directionalLight->render(shader);
-
 		shader.setBool("useGammaCorrection", variableLog["useGammaCorrection"].val<bool>());
 	}
+}
+
+void Scene::renderDirectionalLightShader(Shader shader) {
+	shader.activate();
+	shader.setMat4("lightSpaceMatrix", directionalLight->lightSpaceMatrix);
 }
 
 void Scene::renderInstances(std::string modelId, Shader shader, float dt) {

@@ -14,6 +14,8 @@ struct DirectionalLight {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
+    sampler2D depthBuffer;
+    mat4 lightSpaceMatrix;
 };
 uniform DirectionalLight directionalLight;
 
@@ -59,6 +61,7 @@ uniform vec3 viewPosition;
 
 uniform bool useGammaCorrection;
 
+float calcDirectionalLightShadow();
 vec4 calcDirectionalLight(vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
 vec4 calcPointLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
 vec4 calcSpotLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
@@ -111,6 +114,25 @@ void main() {
 	FragColor = result;
 }
 
+float calcDirectionalLightShadow() {
+    vec4 fragPositionLightSpace = directionalLight.lightSpaceMatrix * vec4(FragPosition, 1.0);
+
+    // Perspective divide (transforming coordinates NDC)
+    vec3 projectionCoords = fragPositionLightSpace.xyz / fragPositionLightSpace.w; // [depth relative to light] => [-1, 1]
+
+    // NDC to depth range
+    projectionCoords = projectionCoords * 0.5 + 0.5; // [-1, 1] => [0, 1]
+
+    // Get closest depth in depth buffer
+    float closestDepth = texture(directionalLight.depthBuffer, projectionCoords.xy).r;
+
+    // Get depth of fragment
+    float currentDepth = projectionCoords.z;
+
+    // If depth is greater (further), return 1
+    return currentDepth > closestDepth ? 1.0 : 0.0;
+}
+
 vec4 calcDirectionalLight(vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
     // Ambient
 	vec4 ambient = directionalLight.ambient * diffuseMap;
@@ -123,7 +145,9 @@ vec4 calcDirectionalLight(vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 s
     // Specular
     vec4 specular = calcSpecular(lightDirection, viewDirection, norm, material.shininess, directionalLight.specular, specularMap);
 
-	return ambient + diffuse + specular;
+    float shadow = calcDirectionalLightShadow();
+
+	return ambient + (1.0 - shadow) * (diffuse + specular);
 }
 
 vec4 calcPointLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {

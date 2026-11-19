@@ -72,10 +72,9 @@ void Mesh::render(Shader shader, unsigned int noInstances) {
     if (noTex) {
         shader.set4Float("material.diffuse", diffuse);
         shader.set4Float("material.specular", specular);
-        shader.setInt("noTex", 1);
         shader.setFloat("material.shininess", 0.5f);
+        shader.setInt("noTex", 1);
     } else {
-        shader.setInt("noTex", 0);
         unsigned int diffuseIdx = 0;
         unsigned int specularIdx = 0;
 
@@ -97,6 +96,8 @@ void Mesh::render(Shader shader, unsigned int noInstances) {
             shader.setInt(name, i);
             textures[i].bind();
         }
+
+        shader.setInt("noTex", 0);
     }
 
     VAO.bind();
