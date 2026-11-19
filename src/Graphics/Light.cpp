@@ -1,7 +1,7 @@
 #include "Light.h"
 
 DirectionalLight::DirectionalLight(glm::vec3 direction, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, BoundingRegion br)
-    : direction(direction), ambient(ambient), diffuse(diffuse), specular(specular), shadowFBO(1024, 1024, GL_DEPTH_BUFFER_BIT), br(br) {
+    : direction(direction), ambient(ambient), diffuse(diffuse), specular(specular), shadowFBO(2048, 2048, GL_DEPTH_BUFFER_BIT), br(br) {
     shadowFBO.generate();
     shadowFBO.bind();
     shadowFBO.disableColorBuffer();

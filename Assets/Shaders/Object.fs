@@ -61,14 +61,14 @@ uniform vec3 viewPosition;
 
 uniform bool useGammaCorrection;
 
-float calcDirectionalLightShadow();
-vec4 calcDirectionalLight(vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
-vec4 calcPointLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
-vec4 calcSpotLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
-vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 norm, float shininess, vec4 lightSpecular, vec4 specularMap);
+float calcDirectionalLightShadow(vec3 normal, vec3 lightDirection);
+vec4 calcDirectionalLight(vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
+vec4 calcPointLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
+vec4 calcSpotLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
+vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 normal, float shininess, vec4 lightSpecular, vec4 specularMap);
 
 void main() {
-    vec3 norm = normalize(Normal);
+    vec3 normal = normalize(Normal);
     vec3 viewDirection = normalize(viewPosition - FragPosition);
 
     vec4 diffuseMap = vec4(0.0);
@@ -85,16 +85,16 @@ void main() {
     vec4 result;
 
     // Directional
-    result = calcDirectionalLight(norm, viewDirection, diffuseMap, specularMap);
+    result = calcDirectionalLight(normal, viewDirection, diffuseMap, specularMap);
 
     // Point lights
     for (int i = 0; i < nPointLights; i++) {
-        result += calcPointLight(i, norm, viewDirection, diffuseMap, specularMap);
+        result += calcPointLight(i, normal, viewDirection, diffuseMap, specularMap);
     }
 
     // Spot lights
     for (int i = 0; i < nSpotLights; i++) {
-        result += calcSpotLight(i, norm, viewDirection, diffuseMap, specularMap);
+        result += calcSpotLight(i, normal, viewDirection, diffuseMap, specularMap);
     }
 
     // Depth testing
@@ -114,7 +114,7 @@ void main() {
 	FragColor = result;
 }
 
-float calcDirectionalLightShadow() {
+float calcDirectionalLightShadow(vec3 normal, vec3 lightDirection) {
     vec4 fragPositionLightSpace = directionalLight.lightSpaceMatrix * vec4(FragPosition, 1.0);
 
     // Perspective divide (transforming coordinates NDC)
@@ -123,44 +123,60 @@ float calcDirectionalLightShadow() {
     // NDC to depth range
     projectionCoords = projectionCoords * 0.5 + 0.5; // [-1, 1] => [0, 1]
 
-    // Get closest depth in depth buffer
-    float closestDepth = texture(directionalLight.depthBuffer, projectionCoords.xy).r;
+    // If too far from light, do not return any shadow
+    if (projectionCoords.z > 1.0) {
+        return 0.0;
+    }
 
     // Get depth of fragment
     float currentDepth = projectionCoords.z;
 
-    // If depth is greater (further), return 1
-    return currentDepth > closestDepth ? 1.0 : 0.0;
+    // Calculate bias
+    float maxBias = 0.05;
+    float minBias = 0.005;
+    float bias = max(maxBias * (1.0 - dot(normal, lightDirection)), minBias);
+
+    float shadowSum = 0.0;
+    vec2 texelSize = 1.0 / textureSize(directionalLight.depthBuffer, 0);
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            float pcfDepth = texture(directionalLight.depthBuffer, projectionCoords.xy + vec2(x, y) * texelSize).r;
+            shadowSum += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+
+    //return average
+    return shadowSum / 9.0;
 }
 
-vec4 calcDirectionalLight(vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
+vec4 calcDirectionalLight(vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
     // Ambient
 	vec4 ambient = directionalLight.ambient * diffuseMap;
 
     // Diffuse
 	vec3 lightDirection = normalize(-directionalLight.direction);
 	vec4 diffuse = directionalLight.diffuse * diffuseMap;
-	diffuse *= max(dot(norm, lightDirection), 0.0);
+	diffuse *= max(dot(normal, lightDirection), 0.0);
 
     // Specular
-    vec4 specular = calcSpecular(lightDirection, viewDirection, norm, material.shininess, directionalLight.specular, specularMap);
+    vec4 specular = calcSpecular(lightDirection, viewDirection, normal, material.shininess, directionalLight.specular, specularMap);
 
-    float shadow = calcDirectionalLightShadow();
+    float shadow = calcDirectionalLightShadow(normal, lightDirection);
 
 	return ambient + (1.0 - shadow) * (diffuse + specular);
 }
 
-vec4 calcPointLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
+vec4 calcPointLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
     // Ambient 
 	vec4 ambient = pointLights[index].ambient * diffuseMap;
 
     // Diffuse
 	vec3 lightDirection = normalize(pointLights[index].position - FragPosition);
 	vec4 diffuse = pointLights[index].diffuse * diffuseMap;
-	diffuse *= max(dot(norm, lightDirection), 0.0);
+	diffuse *= max(dot(normal, lightDirection), 0.0);
 
     // Specular
-    vec4 specular = calcSpecular(lightDirection, viewDirection, norm, material.shininess, pointLights[index].specular, specularMap);
+    vec4 specular = calcSpecular(lightDirection, viewDirection, normal, material.shininess, pointLights[index].specular, specularMap);
 
     // Attenuation
 	float distance = length(pointLights[index].position - FragPosition);
@@ -169,7 +185,7 @@ vec4 calcPointLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, v
 	return (ambient + diffuse + specular) * attenuation;
 }
 
-vec4 calcSpotLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
+vec4 calcSpotLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
     vec3 lightDirection = normalize(spotLights[index].position - FragPosition);
     float theta = dot(lightDirection, normalize(-spotLights[index].direction));
     vec4 ambient = spotLights[index].ambient * diffuseMap;
@@ -178,10 +194,10 @@ vec4 calcSpotLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, ve
     if (theta > spotLights[index].outerCutOff) {
         // Diffuse
         vec4 diffuse = spotLights[index].diffuse * diffuseMap;
-        diffuse *= max(dot(norm, lightDirection), 0.0);
+        diffuse *= max(dot(normal, lightDirection), 0.0);
 
         // Specular
-        vec4 specular = calcSpecular(lightDirection, viewDirection, norm, material.shininess, spotLights[index].specular, specularMap);
+        vec4 specular = calcSpecular(lightDirection, viewDirection, normal, material.shininess, spotLights[index].specular, specularMap);
 
         // Intensity
         float intensity = (theta - spotLights[index].outerCutOff) / (spotLights[index].cutOff - spotLights[index].outerCutOff);
@@ -195,14 +211,14 @@ vec4 calcSpotLight(int index, vec3 norm, vec3 viewDirection, vec4 diffuseMap, ve
     }
 }
 
-vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 norm, float shininess, vec4 lightSpecular, vec4 specularMap) {
-    float diffuse = dot(norm, lightDirection);
+vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 normal, float shininess, vec4 lightSpecular, vec4 specularMap) {
+    float diffuse = dot(normal, lightDirection);
     if (diffuse <= 0.0) { // the surface faces away from the light
         return vec4(0.0);
     }
     float dotProduct = 0.0;
     vec3 halfwayDirection = normalize(lightDirection + viewDirection);
-    dotProduct = dot(norm, halfwayDirection);
+    dotProduct = dot(normal, halfwayDirection);
 	float spec = pow(max(dotProduct, 0.0), shininess * 128.0);
     return lightSpecular * (spec * specularMap);
 }
