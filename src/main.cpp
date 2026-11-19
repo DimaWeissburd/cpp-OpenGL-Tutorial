@@ -72,7 +72,7 @@ int main() {
     Shader shader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Object.fs");
     Shader lampShader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Lamp.fs");
     Shader boxShader("Assets/Shaders/Instanced/Box.vs", "Assets/Shaders/Instanced/Box.fs");
-    Shader directionalLightShader("Assets/Shaders/Shadows/DirectionalShadow.vs", "Assets/Shaders/Shadows/DirectionalShadow.fs");
+    Shader shadowShader("Assets/Shaders/Shadows/Shadow.vs", "Assets/Shaders/Shadows/Shadow.fs");
     Shader textShader("Assets/Shaders/Text.vs", "Assets/Shaders/Text.fs");
     Shader skyboxShader("Assets/SkyBox/SkyBox.vs", "Assets/SkyBox/Sky.fs");
     Shader outlineShader("Assets/Shaders/Outline.vs", "Assets/Shaders/Outline.fs");
@@ -96,20 +96,15 @@ int main() {
     Box box;
     box.init();
 
+
+    scene.loadModels();
+
     DirectionalLight directionalLight(glm::vec3(-0.2f, -0.9f, -0.2f),
         glm::vec4(0.1f, 0.1f, 0.1f, 1.0f),
         glm::vec4(0.6f, 0.6f, 0.6f, 1.0f),
         glm::vec4(0.75f, 0.75f, 0.75f, 1.0f),
         BoundingRegion(glm::vec3(-20.0f, -20.0f, 0.5f), glm::vec3(20.0f, 20.0f, 50.0f)));
-
-    Plane map;
-    map.init(directionalLight.shadowFBO.textures[0]);
-    scene.registerModel(&map);
-
-    scene.loadModels();
-
     scene.directionalLight = &directionalLight;
-    scene.activeSpotLights = 0;
 
     glm::vec3 pointLightPositions[] = {
         glm::vec3(0.7f,  0.2f,  2.0f),
@@ -138,13 +133,15 @@ int main() {
         States::activateIndex(&scene.activePointLights, i);
     }
 
-    SpotLight spotLight = {
-        scene.getActiveCamera()->cameraPosition, scene.getActiveCamera()->cameraFront,
+    SpotLight flashLight(
+        scene.getActiveCamera()->cameraPosition, scene.getActiveCamera()->cameraFront, glm::vec3(1.0f, 0.0f, 0.0f),
         glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(20.0f)),
         1.0f, 0.0014f, 0.000007,
-        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)
-    };
-    scene.spotLights.push_back(&spotLight);
+        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), glm::vec4(1.0f), glm::vec4(1.0f),
+        0.1f, 100.0f
+    );
+    scene.spotLights.push_back(&flashLight);
+
     scene.activeSpotLights = 1;
 
     scene.generateInstance(cube.id, glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(20.0f, 0.1f, 20.0f), 101.0f);
@@ -156,14 +153,12 @@ int main() {
         { 2.8f, 1.9f, -6.2f },
         { 3.5f, 6.3f, -1.0f },
         { -3.4f, 10.9f, -5.5f },
-        { 10.0f, -2.0f, 13.2f },
-        { 2.1f, 7.9f, -8.3f },
+        { 0.0f, 11.0f, 0.0f },
+        { 0.0f, 5.0f, 0.0f },
     };
     for (unsigned int i = 0; i < 9; i++) {
         scene.generateInstance(cube.id, cubePositions[i], glm::vec3(0.5f), 1.0f);
     }
-
-    scene.generateInstance(map.id, glm::vec3(0.0f), glm::vec3(2.0f, 2.0f, 0.0f), 0.0f);
 
     magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
     scene.registerModel(&magicStaff);
@@ -196,7 +191,7 @@ int main() {
         scene.variableLog["FPS"] = 1 / dt;
 
         scene.update();
-        
+
         processInput(dt);
 
         fox.rotation.y += 10.0f * dt;
@@ -216,11 +211,20 @@ int main() {
 
         scene.renderShader(lampShader, false);
         scene.renderInstances(lamp.id, lampShader, dt);
-        
+
         // Render scene for directional light FBO
         directionalLight.shadowFBO.activate();
-        scene.renderDirectionalLightShader(directionalLightShader);
-        renderScene(directionalLightShader);
+        scene.renderDirectionalLightShader(shadowShader);
+        renderScene(shadowShader);
+
+        // Render scene for spotlight FBO
+        for (unsigned int i = 0, length = scene.spotLights.size(); i < length; i++) {
+            if (States::isIndexActive(&scene.activeSpotLights, i)) {
+                scene.spotLights[i]->shadowFBO.activate();
+                scene.renderSpotLightShader(shadowShader, i);
+                renderScene(shadowShader);
+            }
+        }
 
         // Render scene normally
         scene.defaultFBO.activate();
@@ -272,6 +276,8 @@ void processInput(double dt) {
     if (States::isIndexActive(&scene.activeSpotLights, 0)) {
         scene.spotLights[0]->position = scene.getActiveCamera()->cameraPosition;
         scene.spotLights[0]->direction = scene.getActiveCamera()->cameraFront;
+        scene.spotLights[0]->up = scene.getActiveCamera()->cameraUp;
+        scene.spotLights[0]->updateMatrices();
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_F)) {

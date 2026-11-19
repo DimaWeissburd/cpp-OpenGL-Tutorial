@@ -191,7 +191,7 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		nActiveLights = 0;
 		for (unsigned int i = 0; i < nLights; i++) {
 			if (States::isIndexActive(&activeSpotLights, i)) {
-				spotLights[i]->render(shader, nActiveLights);
+				spotLights[i]->render(shader, nActiveLights, texturesIdx--);
 				nActiveLights++;
 			}
 		}
@@ -204,6 +204,11 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 void Scene::renderDirectionalLightShader(Shader shader) {
 	shader.activate();
 	shader.setMat4("lightSpaceMatrix", directionalLight->lightSpaceMatrix);
+}
+
+void Scene::renderSpotLightShader(Shader shader, unsigned int index) {
+	shader.activate();
+	shader.setMat4("lightSpaceMatrix", spotLights[index]->lightSpaceMatrix);
 }
 
 void Scene::renderInstances(std::string modelId, Shader shader, float dt) {

@@ -44,6 +44,10 @@ struct SpotLight {
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
+    float nearPlane;
+    float farPlane;
+    sampler2D depthBuffer;
+    mat4 lightSpaceMatrix;
 };
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 uniform int nSpotLights;
@@ -64,8 +68,10 @@ uniform bool useGammaCorrection;
 float calcDirectionalLightShadow(vec3 normal, vec3 lightDirection);
 vec4 calcDirectionalLight(vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
 vec4 calcPointLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
+float calcSpotLightShadow(int index, vec3 normal, vec3 lightDirection);
 vec4 calcSpotLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap);
 vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 normal, float shininess, vec4 lightSpecular, vec4 specularMap);
+float calculateBias(sampler2D depthBuffer, vec3 normal, vec3 lightDirection, vec3 projectionCoords);
 
 void main() {
     vec3 normal = normalize(Normal);
@@ -128,25 +134,8 @@ float calcDirectionalLightShadow(vec3 normal, vec3 lightDirection) {
         return 0.0;
     }
 
-    // Get depth of fragment
-    float currentDepth = projectionCoords.z;
-
-    // Calculate bias
-    float maxBias = 0.05;
-    float minBias = 0.005;
-    float bias = max(maxBias * (1.0 - dot(normal, lightDirection)), minBias);
-
-    float shadowSum = 0.0;
-    vec2 texelSize = 1.0 / textureSize(directionalLight.depthBuffer, 0);
-    for (int y = -1; y <= 1; y++) {
-        for (int x = -1; x <= 1; x++) {
-            float pcfDepth = texture(directionalLight.depthBuffer, projectionCoords.xy + vec2(x, y) * texelSize).r;
-            shadowSum += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
-        }
-    }
-
-    //return average
-    return shadowSum / 9.0;
+    float bias = calculateBias(directionalLight.depthBuffer, normal, lightDirection, projectionCoords);
+    return bias;
 }
 
 vec4 calcDirectionalLight(vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
@@ -185,12 +174,39 @@ vec4 calcPointLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap,
 	return (ambient + diffuse + specular) * attenuation;
 }
 
+float calcSpotLightShadow(int index, vec3 normal, vec3 lightDirection) {
+    vec4 fragPositionLightSpace = spotLights[index].lightSpaceMatrix * vec4(FragPosition, 1.0);
+
+    // Perspective divide (transform to NDC)
+    vec3 projectionCoords = fragPositionLightSpace.xyz / fragPositionLightSpace.w; // [near, far] => [-1, 1]
+
+    // NDC to depth range
+    projectionCoords = projectionCoords * 0.5 + 0.5; // [-1, 1] => [0, 1]
+
+    // If too far from light, do not return any shadow
+    if (projectionCoords.z > 1.0) {
+        return 0.0;
+    }
+
+    // Get closest depth in depth buffer
+    float closestDepth = texture(spotLights[index].depthBuffer, projectionCoords.xy).r;
+
+    // Linearize Depth
+    float z = closestDepth * 2.0 - 1.0;
+    closestDepth = (2.0 * spotLights[index].nearPlane * spotLights[index].farPlane) /
+        (spotLights[index].farPlane + spotLights[index].nearPlane
+        - z * (spotLights[index].farPlane - spotLights[index].nearPlane));
+        closestDepth /= spotLights[index].farPlane;
+
+    float bias = calculateBias(spotLights[index].depthBuffer, normal, lightDirection, projectionCoords);
+    return bias;
+}
+
 vec4 calcSpotLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, vec4 specularMap) {
     vec3 lightDirection = normalize(spotLights[index].position - FragPosition);
     float theta = dot(lightDirection, normalize(-spotLights[index].direction));
     vec4 ambient = spotLights[index].ambient * diffuseMap;
-    float distance = length(spotLights[index].position - FragPosition);
-    float attenuation = 1.0 / (spotLights[index].k0 + spotLights[index].k1 * distance + spotLights[index].k2 * distance * distance);
+    
     if (theta > spotLights[index].outerCutOff) {
         // Diffuse
         vec4 diffuse = spotLights[index].diffuse * diffuseMap;
@@ -205,9 +221,18 @@ vec4 calcSpotLight(int index, vec3 normal, vec3 viewDirection, vec4 diffuseMap, 
         diffuse *= intensity;
         specular *= intensity;
 
-        return (ambient + diffuse + specular) * attenuation;
+        float distance = length(spotLights[index].position - FragPosition);
+        float attenuation = 1.0 / (spotLights[index].k0 + spotLights[index].k1 * distance + spotLights[index].k2 * distance * distance);
+
+        ambient *= attenuation;
+		diffuse *= attenuation;
+		specular *= attenuation;
+
+        float shadow = calcSpotLightShadow(index, normal, lightDirection);
+
+        return vec4(ambient + (1.0 - shadow) * (diffuse + specular));
     } else {
-        return ambient * attenuation;
+        return ambient;
     }
 }
 
@@ -221,4 +246,21 @@ vec4 calcSpecular(vec3 lightDirection, vec3 viewDirection, vec3 normal, float sh
     dotProduct = dot(normal, halfwayDirection);
 	float spec = pow(max(dotProduct, 0.0), shininess * 128.0);
     return lightSpecular * (spec * specularMap);
+}
+
+float calculateBias(sampler2D depthBuffer, vec3 normal, vec3 lightDirection, vec3 projectionCoords) {
+    float maxBias = 0.05;
+    float minBias = 0.005;
+    float bias = max(maxBias * (1.0 - dot(normal, lightDirection)), minBias);
+
+    // PCF
+    float shadowSum = 0.0;
+    vec2 texelSize = 1.0 / textureSize(depthBuffer, 0);
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            float pcfDepth = texture(depthBuffer, projectionCoords.xy + vec2(x, y) * texelSize).r;
+            shadowSum += projectionCoords.z - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    return shadowSum / 9.0; // Return average
 }

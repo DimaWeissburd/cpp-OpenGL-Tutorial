@@ -87,7 +87,7 @@ public:
     }
 
     void allocateAndAttachTexture(GLenum attachType, GLenum format, GLenum type) {
-        std::string name = "tex" + textures.size();
+        std::string name = "tex" + std::to_string(textures.size());
         Texture tex(name);
 
         tex.bind();

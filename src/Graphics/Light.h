@@ -37,6 +37,7 @@ struct PointLight {
 struct SpotLight {
     glm::vec3 position;
     glm::vec3 direction;
+    glm::vec3 up;
     float cutOff;
     float outerCutOff;
     float k0;
@@ -45,7 +46,17 @@ struct SpotLight {
     glm::vec4 ambient;
     glm::vec4 diffuse;
     glm::vec4 specular;
-    void render(Shader shader, int index);
+    float nearPlane;
+    float farPlane;
+    glm::mat4 lightSpaceMatrix;
+    FramebufferObject shadowFBO;
+    SpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 up,
+        float cutOff, float outerCutOff,
+        float k0, float k1, float k2,
+        glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular,
+        float nearPlane, float farPlane);
+    void render(Shader shader, int index, unsigned int textureIndex);
+    void updateMatrices();
 };
 
 #endif
