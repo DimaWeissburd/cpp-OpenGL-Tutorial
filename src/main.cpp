@@ -48,6 +48,7 @@ float lastFrame = 0.0f;
 
 Sphere sphere(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
+Lamp lamp(4, glm::vec3(0.0f), glm::vec3(1.0f));
 
 HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
 Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::vec3(-90.0f, -90.0f, 0.0f), glm::vec3(-20.0f, 20.0f, 20.0f), 1.0f, CONST_INSTANCES);
@@ -70,9 +71,9 @@ int main() {
         return -1;
     }
     Shader shader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Object.fs");
-    Shader lampShader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Lamp.fs");
     Shader boxShader("Assets/Shaders/Instanced/Box.vs", "Assets/Shaders/Instanced/Box.fs");
     Shader shadowShader("Assets/Shaders/Shadows/Shadow.vs", "Assets/Shaders/Shadows/Shadow.fs");
+    Shader pointShadowShader("Assets/Shaders/Shadows/PointShadow.vs", "Assets/Shaders/Shadows/PointShadow.fs", "Assets/Shaders/Shadows/PointShadow.gs");
     Shader textShader("Assets/Shaders/Text.vs", "Assets/Shaders/Text.fs");
     Shader skyboxShader("Assets/SkyBox/SkyBox.vs", "Assets/SkyBox/Sky.fs");
     Shader outlineShader("Assets/Shaders/Outline.vs", "Assets/Shaders/Outline.fs");
@@ -86,16 +87,12 @@ int main() {
     skybox.init();
     skybox.loadTextures("Assets/SkyBox");
 
-    Lamp lamp(4, glm::vec3(0.0f), glm::vec3(1.0f));
     scene.registerModel(&lamp);
-
     scene.registerModel(&sphere);
-
     scene.registerModel(&cube);
 
     Box box;
     box.init();
-
 
     scene.loadModels();
 
@@ -107,7 +104,7 @@ int main() {
     scene.directionalLight = &directionalLight;
 
     glm::vec3 pointLightPositions[] = {
-        glm::vec3(0.7f,  0.2f,  2.0f),
+        glm::vec3(0.0f,  15.0f,  0.0f),
         glm::vec3(2.3f, -3.3f, -4.0f),
         glm::vec3(-4.0f,  2.0f, -12.0f),
         glm::vec3(0.0f,  0.0f, -3.0f)
@@ -123,11 +120,12 @@ int main() {
     PointLight pointLights[4];
 
     for (unsigned int i = 0; i < 4; i++) {
-        pointLights[i] = {
+        pointLights[i] = PointLight(
             pointLightPositions[i],
             k0, k1, k2,
-            ambient, diffuse, specular
-        };
+            ambient, diffuse, specular,
+            0.5f, 50.0f
+        );
         scene.generateInstance(lamp.id, pointLightPositions[i], glm::vec3(0.25f), 0.25);
         scene.pointLights.push_back(&pointLights[i]);
         States::activateIndex(&scene.activePointLights, i);
@@ -196,26 +194,25 @@ int main() {
 
         fox.rotation.y += 10.0f * dt;
 
-        skyboxShader.activate();
-        skyboxShader.setFloat("Time", scene.variableLog["Time"].val<float>());
-        skybox.render(skyboxShader, &scene);
-
-        scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), 20.0f, 550.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
-        scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), 20.0f, 500.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
-
         for (int i = 0; i < sphere.currentNoInstances; i++) {
             if (glm::length(camera.cameraPosition - sphere.instances[i]->position) > 250.0f) {
                 scene.markForDeletion(sphere.instances[i]->instanceId);
             }
         }
 
-        scene.renderShader(lampShader, false);
-        scene.renderInstances(lamp.id, lampShader, dt);
-
         // Render scene for directional light FBO
         directionalLight.shadowFBO.activate();
         scene.renderDirectionalLightShader(shadowShader);
         renderScene(shadowShader);
+
+        // Render scene for point light FBO
+        for (unsigned int i = 0, length = scene.pointLights.size(); i < length; i++) {
+            if (States::isIndexActive(&scene.activePointLights, i)) {
+                scene.pointLights[i]->shadowFBO.activate();
+                scene.renderPointLightShader(pointShadowShader, i);
+                renderScene(pointShadowShader);
+            }
+        }
 
         // Render scene for spotlight FBO
         for (unsigned int i = 0, length = scene.spotLights.size(); i < length; i++) {
@@ -228,8 +225,16 @@ int main() {
 
         // Render scene normally
         scene.defaultFBO.activate();
+
+        skyboxShader.activate();
+        skyboxShader.setFloat("Time", scene.variableLog["Time"].val<float>());
+        skybox.render(skyboxShader, &scene);
+
         scene.renderShader(shader);
         renderScene(shader);
+
+        scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), 20.0f, 550.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
+        scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), 20.0f, 500.0f, glm::vec2(1.0f), glm::vec3(0.5f, 0.6f, 1.0f));
 
         if (ini.getBool("debug", "show_bounding_boxes", false)) {
             scene.renderShader(boxShader, false);
@@ -253,6 +258,8 @@ void renderScene(Shader shader) {
     }
 
     scene.renderInstances(cube.id, shader, dt);
+
+    scene.renderInstances(lamp.id, shader, dt);
 
     scene.renderInstances(fox.id, shader, dt);
     scene.renderInstances(magicStaff.id, shader, dt);

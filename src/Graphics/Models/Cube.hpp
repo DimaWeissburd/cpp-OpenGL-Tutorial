@@ -8,8 +8,8 @@ class Cube : public Model {
 public:
     Material material;
 
-    Cube(unsigned int maxNoInstances, glm::vec3 rotation, glm::vec3 size, float mass)
-        : Model("cube", BoundTypes::AABB, maxNoInstances, glm::vec3(0.0f), rotation, size, mass, CONST_INSTANCES | NO_TEX) {}
+    Cube(unsigned int maxNoInstances, glm::vec3 rotation, glm::vec3 size, float mass, Material material = Material::red_plastic)
+        : Model("cube", BoundTypes::AABB, maxNoInstances, glm::vec3(0.0f), rotation, size, mass, CONST_INSTANCES | NO_TEX), material(material) {}
 
     void init() {
         int noVertices = 36;
@@ -66,8 +66,8 @@ public:
 
         BoundingRegion boundingRegion(glm::vec3(-0.5f), glm::vec3(0.5f));
 
-        aiColor4D diff(Material::red_plastic.diffuse.r, Material::red_plastic.diffuse.g, Material::red_plastic.diffuse.b, 1.0f);
-        aiColor4D spec(Material::red_plastic.specular.r, Material::red_plastic.specular.g, Material::red_plastic.specular.b, 1.0f);
+        aiColor4D diff(material.diffuse.r, material.diffuse.g, material.diffuse.b, 1.0f);
+        aiColor4D spec(material.specular.r, material.specular.g, material.specular.b, 1.0f);
 
         Mesh ret(boundingRegion, diff, spec);
         ret.loadData(Vertex::genList(vertices, noVertices), indices);

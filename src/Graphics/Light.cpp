@@ -1,5 +1,7 @@
 #include "Light.h"
 
+DirectionalLight::DirectionalLight() {}
+
 DirectionalLight::DirectionalLight(glm::vec3 direction, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, BoundingRegion br)
     : direction(direction), ambient(ambient), diffuse(diffuse), specular(specular), shadowFBO(2048, 2048, GL_DEPTH_BUFFER_BIT), br(br) {
     shadowFBO.generate();
@@ -30,7 +32,25 @@ void DirectionalLight::updateMatrices() {
     lightSpaceMatrix = projection * lightView;
 }
 
-void PointLight::render(Shader shader, int index) {
+PointLight::PointLight() {}
+
+PointLight::PointLight(glm::vec3 position,
+    float k0, float k1, float k2,
+    glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular,
+    float nearPlane, float farPlane)
+    : position(position),
+    k0(k0), k1(k1), k2(k2),
+    ambient(ambient), diffuse(diffuse), specular(specular),
+    nearPlane(nearPlane), farPlane(farPlane),
+    shadowFBO(2048, 2048, GL_DEPTH_BUFFER_BIT) {
+    shadowFBO.generate();
+    shadowFBO.bind();
+    shadowFBO.disableColorBuffer();
+    shadowFBO.allocateAndAttachTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+    updateMatrices();
+}
+
+void PointLight::render(Shader shader, int index, unsigned int textureIndex) {
     std::string name = "pointLights[" + std::to_string(index) + "]";
     shader.set3Float(name + ".position", position);
     shader.setFloat(name + ".k0", k0);
@@ -39,7 +59,43 @@ void PointLight::render(Shader shader, int index) {
     shader.set4Float(name + ".ambient", ambient);
     shader.set4Float(name + ".diffuse", diffuse);
     shader.set4Float(name + ".specular", specular);
+    shader.setFloat(name + ".nearPlace", nearPlane);
+    shader.setFloat(name + ".farPlane", farPlane);
+
+    glActiveTexture(GL_TEXTURE0 + textureIndex);
+    shadowFBO.cubemap.bind();
+    shader.setInt(name + ".depthBuffer", textureIndex);
 }
+
+void PointLight::updateMatrices() {
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f),
+        (float)shadowFBO.width / (float)shadowFBO.height,
+        nearPlane, farPlane);
+    for (unsigned int i = 0; i < 6; i++) {
+        glm::mat4 lightView = glm::lookAt(position, position + PointLight::directions[i], PointLight::ups[i]);
+        lightSpaceMatrices[i] = projection * lightView;
+    }
+}
+
+glm::vec3 PointLight::directions[6] = {
+    {  1.0f,  0.0f,  0.0f },
+    { -1.0f,  0.0f,  0.0f },
+    {  0.0f,  1.0f,  0.0f },
+    {  0.0f, -1.0f,  0.0f },
+    {  0.0f,  0.0f,  1.0f },
+    {  0.0f,  0.0f, -1.0f }
+};
+
+glm::vec3 PointLight::ups[6] = {
+    {  0.0f, -1.0f,  0.0f },
+    {  0.0f, -1.0f,  0.0f },
+    {  0.0f,  0.0f,  1.0f },
+    {  0.0f,  0.0f, -1.0f },
+    {  0.0f, -1.0f,  0.0f },
+    {  0.0f, -1.0f,  0.0f }
+};
+
+SpotLight::SpotLight() {}
 
 SpotLight::SpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 up,
     float cutOff, float outerCutOff,
@@ -80,7 +136,7 @@ void SpotLight::render(Shader shader, int index, unsigned int textureIndex) {
 
 void SpotLight::updateMatrices() {
     glm::mat4 projection = glm::perspective(glm::acos(outerCutOff) * 2.0f,
-        (float)shadowFBO.height / (float)shadowFBO.width,
+        (float)shadowFBO.width / (float)shadowFBO.height,
         nearPlane, farPlane);
     glm::mat4 lightView = glm::lookAt(position, position + direction, up);
     lightSpaceMatrix = projection * lightView;

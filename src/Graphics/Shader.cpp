@@ -1,20 +1,28 @@
 #include "../Graphics/Shader.h"
 
 Shader::Shader() {}
-Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath) {
-    generate(vertexShaderPath, fragmentShaderPath);
+Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
+    generate(vertexShaderPath, fragmentShaderPath, geometryShaderPath);
 }
 
-void Shader::generate(const char* vertexShaderPath, const char* fragmentShaderPath) {
+void Shader::generate(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
     int success;
     char infoLog[512];
 
     GLuint vertexShader = compileShader(vertexShaderPath, GL_VERTEX_SHADER);
     GLuint fragmentShader = compileShader(fragmentShaderPath, GL_FRAGMENT_SHADER);
 
+    GLuint geometryShader = 0;
+    if (geometryShaderPath) {
+        geometryShader = compileShader(geometryShaderPath, GL_GEOMETRY_SHADER);
+    }
+
     id = glCreateProgram();
     glAttachShader(id, vertexShader);
     glAttachShader(id, fragmentShader);
+    if (geometryShaderPath) {
+        glAttachShader(id, geometryShader);
+    }
     glLinkProgram(id);
 
     glGetProgramiv(id, GL_LINK_STATUS, &success);
@@ -25,6 +33,9 @@ void Shader::generate(const char* vertexShaderPath, const char* fragmentShaderPa
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    if (geometryShaderPath) {
+        glDeleteShader(geometryShader);
+    }
 }
 
 void Shader::activate() {
