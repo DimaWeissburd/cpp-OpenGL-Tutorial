@@ -18,6 +18,8 @@ void DirectionalLight::render(Shader shader, unsigned int textureIdx) {
     shader.set4Float(name + ".diffuse", diffuse);
     shader.set4Float(name + ".specular", specular);
 
+    shader.setFloat(name + ".farPlane", br.max.z);
+
     glActiveTexture(GL_TEXTURE0 + textureIdx);
     shadowFBO.textures[0].bind();
     shader.setInt("directionalLight.depthBuffer", textureIdx);
@@ -46,7 +48,7 @@ PointLight::PointLight(glm::vec3 position,
     shadowFBO.generate();
     shadowFBO.bind();
     shadowFBO.disableColorBuffer();
-    shadowFBO.allocateAndAttachTexture(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+    shadowFBO.allocateAndAttachCubemap(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT, GL_FLOAT);
     updateMatrices();
 }
 
@@ -59,7 +61,7 @@ void PointLight::render(Shader shader, int index, unsigned int textureIndex) {
     shader.set4Float(name + ".ambient", ambient);
     shader.set4Float(name + ".diffuse", diffuse);
     shader.set4Float(name + ".specular", specular);
-    shader.setFloat(name + ".nearPlace", nearPlane);
+    shader.setFloat(name + ".nearPlane", nearPlane);
     shader.setFloat(name + ".farPlane", farPlane);
 
     glActiveTexture(GL_TEXTURE0 + textureIndex);
@@ -127,7 +129,7 @@ void SpotLight::render(Shader shader, int index, unsigned int textureIndex) {
     shader.set4Float(name + ".ambient", ambient);
     shader.set4Float(name + ".diffuse", diffuse);
     shader.set4Float(name + ".specular", specular);
-
+    shader.setFloat(name + ".farPlane", farPlane);
     glActiveTexture(GL_TEXTURE0 + textureIndex);
     shadowFBO.textures[0].bind();
     shader.setInt(name + ".depthBuffer", textureIndex);

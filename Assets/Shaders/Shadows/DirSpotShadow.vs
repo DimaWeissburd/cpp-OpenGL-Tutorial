@@ -6,6 +6,9 @@ layout (location = 4) in vec3 aSize;
 
 uniform mat4 lightSpaceMatrix;
 
+out vec4 FragPosition;
+
 void main() {
-	gl_Position = lightSpaceMatrix * vec4(aSize * aPos + aOffset, 1.0);
+	FragPosition = vec4(aSize * aPos + aOffset, 1.0);
+	gl_Position = lightSpaceMatrix * FragPosition;
 }
