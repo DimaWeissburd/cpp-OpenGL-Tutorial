@@ -58,6 +58,8 @@ unsigned int SCR_WIDTH = ini.getInt("window", "width", 1200);
 unsigned int SCR_HEIGHT = ini.getInt("window", "height", 720);
 std::string title = ini.getString("window", "title", "OpenGL Tutorial");
 
+std::string Shader::defaultDirectory = "Assets/Shaders";
+
 int main() {
     scene = Scene(ini, 3, 3, title.c_str(), SCR_WIDTH, SCR_HEIGHT);
 
@@ -69,15 +71,17 @@ int main() {
         glfwTerminate();
         return -1;
     }
-    Shader shader("Assets/Shaders/Instanced/Instanced.vs", "Assets/Shaders/Object.fs");
-    Shader boxShader("Assets/Shaders/Instanced/Box.vs", "Assets/Shaders/Instanced/Box.fs");
-    Shader dirShadowShader("Assets/Shaders/Shadows/DirSpotShadow.vs", "Assets/Shaders/Shadows/DirShadow.fs");
-    Shader spotShadowShader("Assets/Shaders/Shadows/DirSpotShadow.vs", "Assets/Shaders/Shadows/PointSpotShadow.fs");
-    Shader pointShadowShader("Assets/Shaders/Shadows/PointShadow.vs", "Assets/Shaders/Shadows/PointSpotShadow.fs", "Assets/Shaders/Shadows/PointShadow.gs");
-    Shader textShader("Assets/Shaders/Text.vs", "Assets/Shaders/Text.fs");
-    Shader skyboxShader("Assets/SkyBox/SkyBox.vs", "Assets/SkyBox/Sky.fs");
-    Shader outlineShader("Assets/Shaders/Outline.vs", "Assets/Shaders/Outline.fs");
-    Shader bufferShader("Assets/Shaders/Buffer.vs", "Assets/Shaders/Buffer.fs");
+
+    Shader::loadIntoDefault("defaultHead.gh");
+
+    Shader shader(true, "Instanced/Instanced.vs", "Object.fs");
+    Shader boxShader(false, "Instanced/Box.vs", "Instanced/Box.fs");
+    Shader dirShadowShader(false, "Shadows/DirSpotShadow.vs", "Shadows/DirShadow.fs");
+    Shader spotShadowShader(false, "Shadows/DirSpotShadow.vs", "Shadows/PointSpotShadow.fs");
+    Shader pointShadowShader(false, "Shadows/PointShadow.vs", "Shadows/PointSpotShadow.fs", "Shadows/PointShadow.gs");
+    Shader textShader(false, "Text.vs", "Text.fs");
+
+    Shader::clearDefault();
 
     scene.registerModel(&lamp);
     scene.registerModel(&wall);

@@ -1,20 +1,20 @@
 #include "../Graphics/Shader.h"
 
 Shader::Shader() {}
-Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
-    generate(vertexShaderPath, fragmentShaderPath, geometryShaderPath);
+Shader::Shader(bool includeDefaultHeader, const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
+    generate(includeDefaultHeader, vertexShaderPath, fragmentShaderPath, geometryShaderPath);
 }
 
-void Shader::generate(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
+void Shader::generate(bool includeDefaultHeader, const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath) {
     int success;
     char infoLog[512];
 
-    GLuint vertexShader = compileShader(vertexShaderPath, GL_VERTEX_SHADER);
-    GLuint fragmentShader = compileShader(fragmentShaderPath, GL_FRAGMENT_SHADER);
+    GLuint vertexShader = compileShader(includeDefaultHeader, vertexShaderPath, GL_VERTEX_SHADER);
+    GLuint fragmentShader = compileShader(includeDefaultHeader, fragmentShaderPath, GL_FRAGMENT_SHADER);
 
     GLuint geometryShader = 0;
     if (geometryShaderPath) {
-        geometryShader = compileShader(geometryShaderPath, GL_GEOMETRY_SHADER);
+        geometryShader = compileShader(includeDefaultHeader, geometryShaderPath, GL_GEOMETRY_SHADER);
     }
 
     id = glCreateProgram();
@@ -42,27 +42,12 @@ void Shader::activate() {
     glUseProgram(id);
 }
 
-std::string Shader::loadShaderSrc(const char* filename) {
-    std::ifstream file;
-    std::stringstream buf;
-    std::string ret = "";
-    file.open(filename);
-    if (file.is_open()) {
-        buf << file.rdbuf();
-        ret = buf.str();
-    } else {
-        std::cout << "Failed to open " << filename << std::endl;
-    }
-    file.close();
-    return ret;
-}
-
-GLuint Shader::compileShader(const char* filepath, GLenum type) {
+GLuint Shader::compileShader(bool includeDefaultHeader, const char* filePath, GLenum type) {
     int success;
     char infoLog[512];
 
     GLuint shader = glCreateShader(type);
-    std::string shaderSrc = loadShaderSrc(filepath);
+    std::string shaderSrc = loadShaderSrc(includeDefaultHeader, filePath);
     const GLchar* src = shaderSrc.c_str();
     glShaderSource(shader, 1, &src, NULL);
     glCompileShader(shader);
@@ -70,7 +55,7 @@ GLuint Shader::compileShader(const char* filepath, GLenum type) {
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << "Shader compilation failed: " << std::endl << infoLog << std::endl;
+        std::cout << "Shader compilation failed for " << filePath << ":" << std::endl << infoLog << std::endl;
     }
 
     return shader;
@@ -111,4 +96,42 @@ void Shader::set4Float(const std::string& name, glm::vec4 v) {
 
 void Shader::setMat4(const std::string &name, glm::mat4 val) {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, false, glm::value_ptr(val));
+}
+
+std::stringstream Shader::defaultHeaders;
+
+void Shader::loadIntoDefault(const char* filepath) {
+    std::string fileContents = Shader::loadShaderSrc(false, filepath);
+
+    Shader::defaultHeaders << fileContents;
+}
+
+void Shader::clearDefault() {
+    Shader::defaultHeaders.clear();
+}
+
+std::string Shader::loadShaderSrc(bool includeDefaultHeader, const char* filePath) {
+    std::ifstream file;
+    std::stringstream buf;
+
+    std::string ret = "";
+
+    if (includeDefaultHeader) {
+        buf << Shader::defaultHeaders.str();
+    }
+
+    std::string fullPath = Shader::defaultDirectory + '/' + filePath;
+
+    file.open(fullPath.c_str());
+
+    if (file.is_open()) {
+        buf << file.rdbuf();
+        ret = buf.str();
+    } else {
+        std::cout << "Could not open " << filePath << std::endl;
+    }
+
+    file.close();
+
+    return ret;
 }
