@@ -97,8 +97,6 @@ public:
 	glm::mat4 textProjection;
 	glm::vec3 cameraPosition;
 
-	bool useGammaCorrection;
-
 protected:
 	GLFWwindow* window;
 	const char* title;

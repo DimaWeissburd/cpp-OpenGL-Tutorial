@@ -69,24 +69,31 @@ void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _in
 }
 
 void Mesh::render(Shader shader, unsigned int noInstances) {
+    shader.setBool("noNormalMap", true);
+
     if (noTex) {
         shader.set4Float("material.diffuse", diffuse);
         shader.set4Float("material.specular", specular);
         shader.setFloat("material.shininess", 0.5f);
-        shader.setInt("noTex", 1);
+        shader.setBool("noTex", true);
     } else {
-        unsigned int diffuseIdx = 0;
-        unsigned int specularIdx = 0;
+        unsigned int diffuseIndex = 0;
+        unsigned int normalIndex = 0;
+        unsigned int specularIndex = 0;
 
         for (unsigned int i = 0; i < textures.size(); i++) {
             glActiveTexture(GL_TEXTURE0 + i);
             std::string name;
             switch (textures[i].type) {
             case aiTextureType_DIFFUSE:
-                name = "diffuse" + std::to_string(diffuseIdx++);
+                name = "diffuse" + std::to_string(diffuseIndex++);
+                break;
+            case aiTextureType_NORMALS:
+                name = "normal" + std::to_string(normalIndex++);
+                shader.setBool("noNormalMap", false);
                 break;
             case aiTextureType_SPECULAR:
-                name = "specular" + std::to_string(specularIdx++);
+                name = "specular" + std::to_string(specularIndex++);
                 break;
             case aiTextureType_NONE:
                 name = textures[i].name;
@@ -97,7 +104,7 @@ void Mesh::render(Shader shader, unsigned int noInstances) {
             textures[i].bind();
         }
 
-        shader.setInt("noTex", 0);
+        shader.setBool("noTex", false);
     }
 
     VAO.bind();

@@ -24,12 +24,12 @@ void Scene::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 Scene::Scene(const IniFile& ini)
 : activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
-  currentId("aaaaaaaa"), useGammaCorrection(ini.getBool("graphics", "use_gamma_correction", true)) {}
+  currentId("aaaaaaaa") {}
 
 Scene::Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight)
 : glfwVersionMajor(glfwVersionMajor), glfwVersionMinor(glfwVersionMinor), title(title), activeCamera(-1),
   activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
-  currentId("aaaaaaaa"), useGammaCorrection(ini.getBool("graphics", "use_gamma_correction", true)) {
+  currentId("aaaaaaaa") {
 	Scene::screenWidth = screenWidth;
 	Scene::screenHeight = screenHeight;
 	defaultFBO = FramebufferObject(screenWidth, screenHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -95,8 +95,6 @@ bool Scene::init() {
 	}
 
 	FT_Done_FreeType(ft);
-
-	variableLog["useGammaCorrection"] = useGammaCorrection;
 
 	return true;
 }
@@ -196,8 +194,6 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 			}
 		}
 		shader.setInt("nSpotLights", nActiveLights);
-
-		shader.setBool("useGammaCorrection", variableLog["useGammaCorrection"].val<bool>());
 	}
 }
 
