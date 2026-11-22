@@ -185,6 +185,11 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 		}
 		shader.setInt("nPointLights", nActiveLights);
 
+		unsigned int spareCubeUnit = texturesIdx--;
+		for (unsigned int i = nActiveLights; i < MAX_POINT_LIGHTS; i++) {
+			shader.setInt("pointLights[" + std::to_string(i) + "].depthBuffer", spareCubeUnit);
+		}
+
 		nLights = spotLights.size();
 		nActiveLights = 0;
 		for (unsigned int i = 0; i < nLights; i++) {
@@ -194,6 +199,11 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 			}
 		}
 		shader.setInt("nSpotLights", nActiveLights);
+
+		unsigned int spare2DUnit = texturesIdx--;
+		for (unsigned int i = nActiveLights; i < MAX_SPOT_LIGHTS; i++) {
+			shader.setInt("spotLights[" + std::to_string(i) + "].depthBuffer", spare2DUnit);
+		}
 	}
 }
 

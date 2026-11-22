@@ -22,6 +22,9 @@
 #include <Algorithms/States.hpp>
 #include <Algorithms/Trie.hpp>
 
+static const unsigned int MAX_POINT_LIGHTS = 20;
+static const unsigned int MAX_SPOT_LIGHTS = 5;
+
 namespace Octree {
 	class node;
 }

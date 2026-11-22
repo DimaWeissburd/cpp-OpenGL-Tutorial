@@ -36,6 +36,7 @@
 #include <Graphics/Models/Plane.hpp>
 #include <Graphics/Models/Sphere.hpp>
 #include <Utility/IniFile.h>
+#include "Utility/GLErrorChecker.h"
 
 IniFile ini("Settings.ini");
 Scene scene(ini);
@@ -84,9 +85,9 @@ int main() {
     Shader::clearDefault();
 
     scene.registerModel(&lamp);
-    scene.registerModel(&wall);
     scene.registerModel(&sphere);
     scene.registerModel(&cube);
+    scene.registerModel(&wall);
 
     Box box;
     box.init();
@@ -155,7 +156,7 @@ int main() {
         scene.generateInstance(cube.id, cubePositions[i], glm::vec3(0.5f), 1.0f);
     }
 
-    scene.generateInstance(wall.id, glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, -2.0f), 1.0f);
+    scene.generateInstance(wall.id, glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(10.0f), 1.0f);
     
     scene.initInstances();
     scene.prepare(box);
@@ -255,7 +256,7 @@ void processInput(double dt) {
     if (States::isIndexActive(&scene.activeSpotLights, 0)) {
         scene.spotLights[0]->position = scene.getActiveCamera()->cameraPosition;
         scene.spotLights[0]->direction = scene.getActiveCamera()->cameraFront;
-        scene.spotLights[0]->up = scene.getActiveCamera()->cameraUp;
+        scene.spotLights[0]->up = scene.getActiveCamera()->cameraUp; 
         scene.spotLights[0]->updateMatrices();
     }
 

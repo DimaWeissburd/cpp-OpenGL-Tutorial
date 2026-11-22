@@ -1,6 +1,6 @@
 #version 330 core
 
-struct DirLight {
+struct DirectionalLight {
 	vec3 direction;
 
 	vec4 ambient;
