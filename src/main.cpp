@@ -28,6 +28,7 @@
 #include <Graphics/Model.h>
 #include <Graphics/Shader.h>
 #include <Graphics/Texture.h>
+#include <Graphics/UniformMemory.hpp>
 #include <Graphics/Models/Box.hpp>
 #include <Graphics/Models/Brickwall.hpp>
 #include <Graphics/Models/Cube.hpp>
@@ -51,6 +52,8 @@ float lastFrame = 0.0f;
 Sphere sphere(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Lamp lamp(4, glm::vec3(0.0f), glm::vec3(1.0f));
+HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
+Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::vec3(-90.0f, -90.0f, 0.0f), glm::vec3(20.0f), 1.0f, CONST_INSTANCES);
 Brickwall wall;
 
 Joystick joystick(0);
@@ -80,9 +83,18 @@ int main() {
     Shader dirShadowShader(false, "Shadows/DirSpotShadow.vs", "Shadows/DirShadow.fs");
     Shader spotShadowShader(false, "Shadows/DirSpotShadow.vs", "Shadows/PointSpotShadow.fs");
     Shader pointShadowShader(false, "Shadows/PointShadow.vs", "Shadows/PointSpotShadow.fs", "Shadows/PointShadow.gs");
+    Shader skyboxShader(false, "SkyBox/SkyBox.vs", "SkyBox/Sky.fs");
     Shader textShader(false, "Text.vs", "Text.fs");
 
     Shader::clearDefault();
+
+    skyboxShader.activate();
+    skyboxShader.set3Float("min", 0.047f, 0.016f, 0.239f);
+    skyboxShader.set3Float("max", 0.945f, 1.000f, 0.682f);
+
+    Cubemap skybox;
+    skybox.init();
+    //skybox.loadTextures("Assets/Textures/SkyBox");
 
     scene.registerModel(&lamp);
     scene.registerModel(&sphere);
@@ -91,6 +103,14 @@ int main() {
 
     Box box;
     box.init();
+
+    magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
+    scene.registerModel(&magicStaff);
+    scene.generateInstance(magicStaff.id, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
+
+    fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
+    scene.registerModel(&fox);
+    scene.generateInstance(fox.id, fox.position, fox.size, fox.mass);
 
     scene.loadModels();
 
@@ -184,6 +204,8 @@ int main() {
 
         processInput(dt);
 
+        fox.rotation.y += 10.0f * dt;
+
         for (int i = 0; i < sphere.currentNoInstances; i++) {
             if (glm::length(camera.cameraPosition - sphere.instances[i]->position) > 250.0f) {
                 scene.markForDeletion(sphere.instances[i]->instanceId);
@@ -215,6 +237,11 @@ int main() {
 
         // Render scene normally
         scene.defaultFBO.activate();
+
+        skyboxShader.activate();
+        skyboxShader.setFloat("Time", scene.variableLog["Time"].val<float>());
+        skybox.render(skyboxShader, &scene);
+
         scene.renderShader(shader);
         renderScene(shader);
 
@@ -225,6 +252,9 @@ int main() {
         scene.clearDeadInstances();
     }
 
+    fox.cleanup();
+    magicStaff.cleanup();
+    skybox.cleanup();
     scene.cleanup();
     return 0;
 }
@@ -236,6 +266,8 @@ void renderScene(Shader shader) {
     scene.renderInstances(cube.id, shader, dt);
     scene.renderInstances(lamp.id, shader, dt);
     scene.renderInstances(wall.id, shader, dt);
+    scene.renderInstances(fox.id, shader, dt);
+    scene.renderInstances(magicStaff.id, shader, dt);
 }
 
 void launchItem(float dt) {
