@@ -15,15 +15,13 @@
 #include <Graphics/Model.h>
 #include <Graphics/Shader.h>
 #include <Graphics/Text.h>
+#include <Graphics/UniformMemory.hpp>
 #include <Graphics/Models/Box.hpp>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
 #include <Algorithms/Octree.h>
 #include <Algorithms/States.hpp>
 #include <Algorithms/Trie.hpp>
-
-static const unsigned int MAX_POINT_LIGHTS = 20;
-static const unsigned int MAX_SPOT_LIGHTS = 5;
 
 namespace Octree {
 	class node;
@@ -48,6 +46,8 @@ public:
 
 	FramebufferObject defaultFBO;
 
+	UBO::UBO lightUBO;
+
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	Scene(const IniFile& ini);
@@ -55,7 +55,9 @@ public:
 
 	bool init();
 
-	void prepare(Box& box);
+	void prepare(Box& box, std::vector<Shader> shaders);
+
+	void updateLightUBO();
 
 	void processInput(float dt);
 	void update();
@@ -88,10 +90,12 @@ public:
 
 	std::vector<PointLight*> pointLights;
 	unsigned int activePointLights;
+	unsigned int nPointLights;
 	std::vector<SpotLight*> spotLights;
 	unsigned int activeSpotLights;
+	unsigned int nSpotLights;
 	DirectionalLight* directionalLight;
-	bool dirLightActive;
+	bool directionalLightActive;
 
 	std::vector<Camera*> cameras;
 	int activeCamera;

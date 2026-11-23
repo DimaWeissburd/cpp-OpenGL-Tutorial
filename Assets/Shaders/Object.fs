@@ -11,17 +11,9 @@ uniform sampler2D diffuse0;
 uniform sampler2D specular0;
 uniform sampler2D normal0;
 
-uniform DirectionalLight directionalLight;
-
-#define MAX_POINT_LIGHTS 20
-
-uniform PointLight pointLights[MAX_POINT_LIGHTS];
-uniform int nPointLights;
-
-#define MAX_SPOT_LIGHTS 5
-
-uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
-uniform int nSpotLights;
+uniform sampler2D directionalLightBuffer;
+uniform samplerCube pointLightBuffers[MAX_POINT_LIGHTS];
+uniform sampler2D spotLightBuffers[MAX_SPOT_LIGHTS];
 
 out vec4 FragColor;
 
@@ -47,7 +39,7 @@ vec3 sampleOffsetDirections[NUM_SAMPLES] = vec3[]
    vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
    vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
    vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  0,  0)
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1,  -1)
 );
 
 void main() {
@@ -128,12 +120,12 @@ float calcDirectionalLightShadow(vec3 normal, vec3 viewVec, vec3 lightDir) {
 
 	// PCF
 	float shadowSum = 0.0;
-	vec2 texelSize = 1.0 / textureSize(directionalLight.depthBuffer, 0);
+	vec2 texelSize = 1.0 / textureSize(directionalLightBuffer, 0);
 	float viewDist = length(viewVec);
 	float diskRadius = (1.0 + (viewDist / directionalLight.farPlane)) / 30.0;
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
-			float pcfDepth = texture(directionalLight.depthBuffer,
+			float pcfDepth = texture(directionalLightBuffer,
 				projCoords.xy + vec2(x, y) * texelSize * diskRadius).r;
 			shadowSum += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
 		}
@@ -143,7 +135,7 @@ float calcDirectionalLightShadow(vec3 normal, vec3 viewVec, vec3 lightDir) {
 	return shadowSum / 9.0;
 }
 
-vec4 calcDirectionalLight(vec3 normal, vec3 viewDir, vec3 viewVec, vec4 diffMap, vec4 specMap) {
+vec4 calcDirectionalLight(vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diffMap, vec4 specMap) {
 	// ambient
 	vec4 ambient = directionalLight.ambient * diffMap;
 
@@ -175,12 +167,6 @@ float calcPointLightShadow(int index, vec3 normal, vec3 viewVec, vec3 lightDir) 
 	// get vector from the light to the fragment
 	vec3 lightToFrag = fs_in.FragPosition - pointLights[index].position;
 
-	// get depth from cubemap
-	float closestDepth = texture(pointLights[index].depthBuffer, lightToFrag).r;
-
-	// [0, 1] => original depth value
-	closestDepth *= pointLights[index].farPlane;
-
 	// get current depth
 	float currentDepth = length(lightToFrag);
 
@@ -194,7 +180,7 @@ float calcPointLightShadow(int index, vec3 normal, vec3 viewVec, vec3 lightDir) 
 	float viewDist = length(viewVec);
 	float diskRadius = (1.0 + (viewDist / pointLights[index].farPlane)) / 30.0;
 	for (int i = 0; i < NUM_SAMPLES; i++) {
-		float pcfDepth = texture(pointLights[index].depthBuffer, 
+		float pcfDepth = texture(pointLightBuffers[index], 
 			lightToFrag + sampleOffsetDirections[i] * diskRadius).r;
 		pcfDepth *= pointLights[index].farPlane;
 
@@ -228,7 +214,7 @@ vec4 calcPointLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 dif
 		dotProd = dot(normal, halfwayDir);
 
 		float spec = pow(max(dotProd, 0.0), material.shininess * 128);
-		specular = directionalLight.specular * (spec * specMap);
+		specular = pointLights[index].specular * (spec * specMap);
 	}
 
 	// calculate attenuation
@@ -269,12 +255,12 @@ float calcSpotLightShadow(int index, vec3 normal, vec3 viewVec, vec3 lightDir) {
 
 	// PCF
 	float shadowSum = 0.0;
-	vec2 texelSize = 1.0 / textureSize(spotLights[index].depthBuffer, 0);
+	vec2 texelSize = 1.0 / textureSize(spotLightBuffers[index], 0);
 	float viewDist = length(viewVec);
 	float diskRadius = (1.0 + (viewDist / spotLights[index].farPlane)) / 30.0;
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
-			float pcfDepth = texture(spotLights[index].depthBuffer,
+			float pcfDepth = texture(spotLightBuffers[index],
 				projCoords.xy + vec2(x, y) * texelSize * diskRadius).r;
 			pcfDepth *= spotLights[index].farPlane;
 
@@ -312,7 +298,7 @@ vec4 calcSpotLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diff
 			dotProd = dot(normal, halfwayDir);
 
 			float spec = pow(max(dotProd, 0.0), material.shininess * 128);
-			specular = directionalLight.specular * (spec * specMap);
+			specular = spotLights[index].specular * (spec * specMap);
 		}
 
 		// calculate Intensity

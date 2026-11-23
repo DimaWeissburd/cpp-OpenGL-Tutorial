@@ -179,7 +179,7 @@ int main() {
     scene.generateInstance(wall.id, glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(10.0f), 1.0f);
     
     scene.initInstances();
-    scene.prepare(box);
+    scene.prepare(box, { shader });
 
     joystick.update();
     if (joystick.isPresent()) {
@@ -203,6 +203,7 @@ int main() {
         scene.update();
 
         processInput(dt);
+        scene.updateLightUBO();
 
         fox.rotation.y += 10.0f * dt;
 

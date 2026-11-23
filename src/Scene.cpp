@@ -1,6 +1,9 @@
 #include "Scene.h"
 #include "Utility/IniFile.h"
 
+#define MAX_POINT_LIGHTS 20
+#define MAX_SPOT_LIGHTS 5
+
 unsigned int Scene::screenWidth = 0;
 unsigned int Scene::screenHeight = 0;
 
@@ -23,13 +26,13 @@ void Scene::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 }
 
 Scene::Scene(const IniFile& ini)
-: activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
-  currentId("aaaaaaaa") {}
+: activeCamera(-1), activePointLights(0), activeSpotLights(0), directionalLight(nullptr), directionalLightActive(false),
+  currentId("aaaaaaaa"), lightUBO(0) {}
 
 Scene::Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight)
 : glfwVersionMajor(glfwVersionMajor), glfwVersionMinor(glfwVersionMinor), title(title), activeCamera(-1),
-  activePointLights(0), activeSpotLights(0), directionalLight(nullptr), dirLightActive(false),
-  currentId("aaaaaaaa") {
+  activePointLights(0), activeSpotLights(0), directionalLight(nullptr), directionalLightActive(false),
+  currentId("aaaaaaaa"), lightUBO(0) {
 	Scene::screenWidth = screenWidth;
 	Scene::screenHeight = screenHeight;
 	defaultFBO = FramebufferObject(screenWidth, screenHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -99,8 +102,118 @@ bool Scene::init() {
 	return true;
 }
 
-void Scene::prepare(Box& box) {
+void Scene::prepare(Box& box, std::vector<Shader> shaders) {
 	octree->update(box);
+	lightUBO = UBO::UBO(0, {
+		UBO::newStruct({ // Directional light
+			UBO::Type::VEC3,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::SCALAR,
+			UBO::newColMat(4, 4)
+		}),
+
+		UBO::Type::SCALAR, // Point lights
+		UBO::newArray(MAX_POINT_LIGHTS, UBO::newStruct({
+			UBO::Type::VEC3,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR
+		})),
+
+		UBO::Type::SCALAR, // Spot lights
+		UBO::newArray(MAX_SPOT_LIGHTS, UBO::newStruct({
+			UBO::Type::VEC3,
+			UBO::Type::VEC3,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::VEC4,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::Type::SCALAR,
+			UBO::newColMat(4, 4)
+		}))
+	});
+	for (Shader s : shaders) {
+		lightUBO.attachToShader(s, "Lights");
+	}
+	lightUBO.generate();
+	lightUBO.bind();
+	lightUBO.initNullData(GL_STATIC_DRAW);
+	lightUBO.bindRange();
+	lightUBO.clear();
+
+	updateLightUBO();
+}
+
+void Scene::updateLightUBO() {
+	lightUBO.bind();
+	lightUBO.startWrite();
+
+	// Directional light
+	lightUBO.writeElement<glm::vec3>(&directionalLight->direction);
+	lightUBO.writeElement<glm::vec4>(&directionalLight->ambient);
+	lightUBO.writeElement<glm::vec4>(&directionalLight->diffuse);
+	lightUBO.writeElement<glm::vec4>(&directionalLight->specular);
+	lightUBO.writeElement<float>(&directionalLight->br.max.z);
+	lightUBO.writeArrayContainer<glm::mat4, glm::vec4>(&directionalLight->lightSpaceMatrix, 4);
+
+	// Point lights
+	nPointLights = 0;
+	for (unsigned int k = 0; k < pointLights.size() && nPointLights < MAX_POINT_LIGHTS; k++) {
+		if (States::isIndexActive(&activePointLights, k)) nPointLights++;
+	}
+	lightUBO.writeElement<unsigned int>(&nPointLights);
+
+	unsigned int written = 0;
+	for (unsigned int k = 0; k < pointLights.size() && written < nPointLights; k++) {
+		if (!States::isIndexActive(&activePointLights, k)) continue;
+		lightUBO.writeElement<glm::vec3>(&pointLights[k]->position);
+		lightUBO.writeElement<glm::vec4>(&pointLights[k]->ambient);
+		lightUBO.writeElement<glm::vec4>(&pointLights[k]->diffuse);
+		lightUBO.writeElement<glm::vec4>(&pointLights[k]->specular);
+		lightUBO.writeElement<float>(&pointLights[k]->k0);
+		lightUBO.writeElement<float>(&pointLights[k]->k1);
+		lightUBO.writeElement<float>(&pointLights[k]->k2);
+		lightUBO.writeElement<float>(&pointLights[k]->farPlane);
+		written++;
+	}
+	lightUBO.advanceArray(MAX_POINT_LIGHTS - written);
+
+	// Spot lights
+	nSpotLights = 0;
+	for (unsigned int k = 0; k < spotLights.size() && nSpotLights < MAX_SPOT_LIGHTS; k++) {
+		if (States::isIndexActive(&activeSpotLights, k)) nSpotLights++;
+	}
+	lightUBO.writeElement<unsigned int>(&nSpotLights);
+
+	written = 0;
+	for (unsigned int k = 0; k < spotLights.size() && written < nSpotLights; k++) {
+		if (!States::isIndexActive(&activeSpotLights, k)) continue;
+		lightUBO.writeElement<glm::vec3>(&spotLights[k]->position);
+		lightUBO.writeElement<glm::vec3>(&spotLights[k]->direction);
+		lightUBO.writeElement<float>(&spotLights[k]->cutOff);
+		lightUBO.writeElement<float>(&spotLights[k]->outerCutOff);
+		lightUBO.writeElement<glm::vec4>(&spotLights[k]->ambient);
+		lightUBO.writeElement<glm::vec4>(&spotLights[k]->diffuse);
+		lightUBO.writeElement<glm::vec4>(&spotLights[k]->specular);
+		lightUBO.writeElement<float>(&spotLights[k]->k0);
+		lightUBO.writeElement<float>(&spotLights[k]->k1);
+		lightUBO.writeElement<float>(&spotLights[k]->k2);
+		lightUBO.writeElement<float>(&spotLights[k]->nearPlane);
+		lightUBO.writeElement<float>(&spotLights[k]->farPlane);
+		lightUBO.writeArrayContainer<glm::mat4, glm::vec4>(&spotLights[k]->lightSpaceMatrix, 4);
+		written++;
+	}
 }
 
 void Scene::processInput(float dt) {
@@ -183,11 +296,10 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 				nActiveLights++;
 			}
 		}
-		shader.setInt("nPointLights", nActiveLights);
 
 		unsigned int spareCubeUnit = texturesIdx--;
 		for (unsigned int i = nActiveLights; i < MAX_POINT_LIGHTS; i++) {
-			shader.setInt("pointLights[" + std::to_string(i) + "].depthBuffer", spareCubeUnit);
+			shader.setInt("pointLightBuffers[" + std::to_string(i) + "]", spareCubeUnit);
 		}
 
 		nLights = spotLights.size();
@@ -198,11 +310,10 @@ void Scene::renderShader(Shader shader, bool applyLighting) {
 				nActiveLights++;
 			}
 		}
-		shader.setInt("nSpotLights", nActiveLights);
 
 		unsigned int spare2DUnit = texturesIdx--;
 		for (unsigned int i = nActiveLights; i < MAX_SPOT_LIGHTS; i++) {
-			shader.setInt("spotLights[" + std::to_string(i) + "].depthBuffer", spare2DUnit);
+			shader.setInt("spotLightBuffers[" + std::to_string(i) + "]", spare2DUnit);
 		}
 	}
 }

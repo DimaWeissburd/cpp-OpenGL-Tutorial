@@ -274,9 +274,9 @@ void Octree::node::checkCollisionsSelf(BoundingRegion object) {
     for (BoundingRegion boundingRegion : objects) {
         if (boundingRegion.intersectsWith(object)) {
             if (boundingRegion.instance->instanceId != object.instance->instanceId) {
-                std::cout << "Instance " << boundingRegion.instance->instanceId
-                    << " (" << boundingRegion.instance->modelId << ") collides with instance "
-                    << object.instance->instanceId << " (" << object.instance->modelId << ")" << std::endl;
+                //std::cout << "Instance " << boundingRegion.instance->instanceId
+                //    << " (" << boundingRegion.instance->modelId << ") collides with instance "
+                //    << object.instance->instanceId << " (" << object.instance->modelId << ")" << std::endl;
                 boundingRegion.intersectsWith(object);
             }
         }

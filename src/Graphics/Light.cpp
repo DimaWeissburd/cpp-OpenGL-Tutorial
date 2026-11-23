@@ -12,19 +12,9 @@ DirectionalLight::DirectionalLight(glm::vec3 direction, glm::vec4 ambient, glm::
 }
 
 void DirectionalLight::render(Shader shader, unsigned int textureIdx) {
-    std::string name = "directionalLight";
-    shader.set3Float(name + ".direction", direction);
-    shader.set4Float(name + ".ambient", ambient);
-    shader.set4Float(name + ".diffuse", diffuse);
-    shader.set4Float(name + ".specular", specular);
-
-    shader.setFloat(name + ".farPlane", br.max.z);
-
     glActiveTexture(GL_TEXTURE0 + textureIdx);
     shadowFBO.textures[0].bind();
-    shader.setInt("directionalLight.depthBuffer", textureIdx);
-
-    shader.setMat4("directionalLight.lightSpaceMatrix", lightSpaceMatrix);
+    shader.setInt("directionalLightBuffer", textureIdx);
 }
 
 void DirectionalLight::updateMatrices() {
@@ -53,20 +43,9 @@ PointLight::PointLight(glm::vec3 position,
 }
 
 void PointLight::render(Shader shader, int index, unsigned int textureIndex) {
-    std::string name = "pointLights[" + std::to_string(index) + "]";
-    shader.set3Float(name + ".position", position);
-    shader.setFloat(name + ".k0", k0);
-    shader.setFloat(name + ".k1", k1);
-    shader.setFloat(name + ".k2", k2);
-    shader.set4Float(name + ".ambient", ambient);
-    shader.set4Float(name + ".diffuse", diffuse);
-    shader.set4Float(name + ".specular", specular);
-    shader.setFloat(name + ".nearPlane", nearPlane);
-    shader.setFloat(name + ".farPlane", farPlane);
-
     glActiveTexture(GL_TEXTURE0 + textureIndex);
     shadowFBO.cubemap.bind();
-    shader.setInt(name + ".depthBuffer", textureIndex);
+    shader.setInt("pointLightBuffers[" + std::to_string(index) + "]", textureIndex);
 }
 
 void PointLight::updateMatrices() {
@@ -118,22 +97,9 @@ SpotLight::SpotLight(glm::vec3 position, glm::vec3 direction, glm::vec3 up,
 }
 
 void SpotLight::render(Shader shader, int index, unsigned int textureIndex) {
-    std::string name = "spotLights[" + std::to_string(index) + "]";
-    shader.set3Float(name + ".position", position);
-    shader.set3Float(name + ".direction", direction);
-    shader.setFloat(name + ".cutOff", cutOff);
-    shader.setFloat(name + ".outerCutOff", outerCutOff);
-    shader.setFloat(name + ".k0", k0);
-    shader.setFloat(name + ".k1", k1);
-    shader.setFloat(name + ".k2", k2);
-    shader.set4Float(name + ".ambient", ambient);
-    shader.set4Float(name + ".diffuse", diffuse);
-    shader.set4Float(name + ".specular", specular);
-    shader.setFloat(name + ".farPlane", farPlane);
     glActiveTexture(GL_TEXTURE0 + textureIndex);
     shadowFBO.textures[0].bind();
-    shader.setInt(name + ".depthBuffer", textureIndex);
-    shader.setMat4(name + ".lightSpaceMatrix", lightSpaceMatrix);
+    shader.setInt("spotLightBuffers[" + std::to_string(index) + "]", textureIndex);
 }
 
 void SpotLight::updateMatrices() {

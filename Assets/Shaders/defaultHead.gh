@@ -9,10 +9,10 @@ struct DirectionalLight {
 
 	float farPlane;
 
-	sampler2D depthBuffer;
 	mat4 lightSpaceMatrix;
 };
 
+#define MAX_POINT_LIGHTS 20
 struct PointLight {
 	vec3 position;
 
@@ -25,10 +25,9 @@ struct PointLight {
 	float k2;
 
 	float farPlane;
-
-	samplerCube depthBuffer;
 };
 
+#define MAX_SPOT_LIGHTS 5
 struct SpotLight {
 	vec3 position;
 	vec3 direction;
@@ -46,7 +45,15 @@ struct SpotLight {
 
 	float nearPlane;
 	float farPlane;
-
-	sampler2D depthBuffer;
 	mat4 lightSpaceMatrix;
+};
+
+layout (std140) uniform Lights {
+	DirectionalLight directionalLight;
+
+	int nPointLights;
+	PointLight pointLights[MAX_POINT_LIGHTS];
+
+	int nSpotLights;
+	SpotLight spotLights[MAX_SPOT_LIGHTS];
 };
