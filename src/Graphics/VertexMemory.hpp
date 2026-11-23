@@ -24,8 +24,8 @@ public:
 	}
 
 	template<typename T>
-	void setData(GLuint noElements, T* data, GLenum usage) {
-		glBufferData(type, noElements * sizeof(T), data, usage);
+	void setData(GLuint nElements, T* data, GLenum usage) {
+		glBufferData(type, nElements * sizeof(T), data, usage);
 	}
 
 	template<typename T>

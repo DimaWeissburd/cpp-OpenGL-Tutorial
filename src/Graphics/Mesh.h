@@ -15,8 +15,13 @@ struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoord;
+    glm::vec3 tangent;
 
     static std::vector<struct Vertex> genList(float* vertices, int noVertices);
+
+    static void averageVectors(glm::vec3& baseVec, glm::vec3 addition, unsigned char existingContributions);
+
+    static void calcTanVectors(std::vector<Vertex>& list, std::vector<unsigned int>& indices);
 };
 typedef struct Vertex Vertex;
 

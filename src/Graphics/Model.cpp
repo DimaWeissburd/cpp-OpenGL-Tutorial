@@ -47,9 +47,9 @@ void Model::initInstances() {
     for (unsigned int i = 0, size = meshes.size(); i < size; i++) {
         meshes[i].VAO.bind();
         positionVBO.bind();
-        positionVBO.setAttPointer<glm::vec3>(3, 3, GL_FLOAT, 1, 0, 1);
+        positionVBO.setAttPointer<glm::vec3>(4, 3, GL_FLOAT, 1, 0, 1);
         sizeVBO.bind();
-        sizeVBO.setAttPointer<glm::vec3>(4, 3, GL_FLOAT, 1, 0, 1);
+        sizeVBO.setAttPointer<glm::vec3>(5, 3, GL_FLOAT, 1, 0, 1);
         ArrayObject::clear();
     }
 }
@@ -77,22 +77,19 @@ unsigned int Model::getIdx(std::string id) {
 
 void Model::init() {}
 
-void Model::render(Shader shader, float dt, Scene* scene, bool setModel) {
-    if (setModel) {
-        glm::mat4 model(1.0f);
-
-        if (!instances.empty() && rotation != glm::vec3(0.0f)) {
-            // rotate around the instance's own position, not the world origin
-            glm::vec3 p = instances[0]->position;
-            model = glm::translate(model, p);
-            model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0, 0, 1));
-            model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0, 1, 0));
-            model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1, 0, 0));
-            model = glm::translate(model, -p);
-        }
-
-        shader.setMat4("model", model);
+void Model::render(Shader shader, float dt, Scene* scene, glm::mat4 model) {
+    if (!instances.empty() && rotation != glm::vec3(0.0f)) {
+        // rotate around the instance's own position, not the world origin
+        glm::vec3 p = instances[0]->position;
+        model = glm::translate(model, p);
+        model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0, 0, 1));
+        model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0, 1, 0));
+        model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1, 0, 0));
+        model = glm::translate(model, -p);
     }
+
+    shader.setMat4("model", model);
+    shader.setMat3("normalModel", glm::transpose(glm::inverse(glm::mat3(model))));
 
     if (!States::isActive(&switches, CONST_INSTANCES)) {
         std::vector<glm::vec3> positions, sizes;
@@ -136,7 +133,7 @@ void Model::cleanup() {
 
 void Model::loadModel(std::string path) {
     Assimp::Importer import;
-    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cout << "Could not load model at " << path << std::endl << import.GetErrorString() << std::endl;
@@ -198,6 +195,12 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             vertex.texCoord = glm::vec2(0.0f);
         }
 
+        vertex.tangent = {
+            mesh->mTangents[i].x,
+            mesh->mTangents[i].y,
+            mesh->mTangents[i].z
+        };
+
         vertices.push_back(vertex);
     }
 
@@ -242,7 +245,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             }
             aiColor4D spec(1.0f);
             aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &spec);
-
+            
             ret = Mesh(boundingRegion, diff, spec);
         }
         else {
@@ -250,6 +253,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
             std::vector<Texture> specularMaps = loadTextures(material, aiTextureType_SPECULAR);
             textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+            std::vector<Texture> normalMaps = loadTextures(material, aiTextureType_NORMALS);
+            if (normalMaps.empty())
+                normalMaps = loadTextures(material, aiTextureType_HEIGHT); // .obj stores normal maps as "bump"
+            textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+            textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 
             ret = Mesh(boundingRegion, textures);
         }

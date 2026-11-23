@@ -15,11 +15,9 @@ public:
         rb.mass = 1.0f;
     }
 
-    void render(Shader shader, float dt, Scene* scene, bool setModel = false) override {
+    void render(Shader shader, float dt, Scene* scene, glm::mat4 model = glm::mat4(1.0f)) override {
         Camera* cam = scene->getActiveCamera();
         if (!cam) return;
-
-        glm::mat4 model = glm::mat4(1.0f);
 
         // Translate to camera hand position
         rb.position = cam->cameraPosition
@@ -52,9 +50,10 @@ public:
         // Scale
         model = glm::scale(model, size);
 
-        shader.setMat4("model", model);
-
-        Model::render(shader, dt, scene, false);
+        glm::vec3 savedRotation = rotation;
+        rotation = glm::vec3(0.0f);
+        Model::render(shader, dt, scene, model);
+        rotation = savedRotation;
 
         // Adjust bounding box to rotation
         glm::vec3 localMin(FLT_MAX), localMax(-FLT_MAX);

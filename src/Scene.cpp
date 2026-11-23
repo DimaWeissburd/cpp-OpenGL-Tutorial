@@ -1,8 +1,8 @@
 #include "Scene.h"
 #include "Utility/IniFile.h"
 
-#define MAX_POINT_LIGHTS 20
-#define MAX_SPOT_LIGHTS 5
+#define MAX_POINT_LIGHTS 10
+#define MAX_SPOT_LIGHTS 2
 
 unsigned int Scene::screenWidth = 0;
 unsigned int Scene::screenHeight = 0;

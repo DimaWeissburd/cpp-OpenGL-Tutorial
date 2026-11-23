@@ -13,11 +13,6 @@ public:
         id = "lamp";
         this->lightColor = lightColor;
     }
-
-    void render(Shader shader, float dt, Scene* scene, bool setModel = true) {
-        shader.set3Float("lightColor", lightColor);
-        Cube::render(shader, dt, scene, setModel);
-    }
 };
 
 #endif

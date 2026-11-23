@@ -30,6 +30,7 @@ public:
     void set4Float(const std::string &name, float v0, float v1, float v2, float v3);
     void set4Float(const std::string& name, aiColor4D color);
     void set4Float(const std::string& name, glm::vec4 v);
+    void setMat3(const std::string& name, glm::mat3 val);
     void setMat4(const std::string &name, glm::mat4 val);
 
     static std::string defaultDirectory;

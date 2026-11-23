@@ -3,6 +3,7 @@ struct Material {
 	vec4 specular;
 	float shininess;
 };
+uniform Material material;
 
 uniform bool noTex;
 uniform bool noNormalMap;
@@ -19,13 +20,9 @@ out vec4 FragColor;
 
 in VS_OUT {
 	vec3 FragPosition;
-	vec3 Normal;
 	vec2 TexCoord;
+	TangentLights tanLights;
 } fs_in;
-
-uniform Material material;
-
-uniform vec3 viewPosition;
 
 vec4 calcDirectionalLight(vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diffMap, vec4 specMap);
 vec4 calcPointLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diffMap, vec4 specMap);
@@ -44,14 +41,14 @@ vec3 sampleOffsetDirections[NUM_SAMPLES] = vec3[]
 
 void main() {
 	// properties
-	vec3 normal = normalize(fs_in.Normal);
+	vec3 normal = normalize(fs_in.tanLights.Normal);
 
 	if (!noNormalMap) {
 		normal = texture(normal0, fs_in.TexCoord).rgb;
 		normal = normalize(normal * 2.0 - 1.0); // map from [0, 1] to [-1, 1]
 	}
 
-	vec3 viewVec = viewPosition - fs_in.FragPosition;
+	vec3 viewVec = fs_in.tanLights.viewPosition - fs_in.tanLights.FragPosition;
 	vec3 viewDir = normalize(viewVec);
 
 	vec4 diffMap;
@@ -88,7 +85,7 @@ void main() {
 	float near = 0.1;
 	float far = 100.0;
 	float z = gl_FragCoord.z * 2.0 - 1.0; // transform to NDC [0, 1] => [-1, 1]
-	float linearDepth = (2.0 * near * far) / (z * (far - near) - (far + near)); // take inverse of the projection matrix (perspective)
+	float linearDepth = (2.0 * near * far) / (far + near - z * (far - near)); // take inverse of the projection matrix (perspective)
 	float factor = (near + linearDepth) / (near - far); // convert back to [0, 1]
 
 	result.rgb *= 1 - factor;
@@ -140,7 +137,7 @@ vec4 calcDirectionalLight(vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diffMap,
 	vec4 ambient = directionalLight.ambient * diffMap;
 
 	// diffuse
-	vec3 lightDir = normalize(-directionalLight.direction);
+	vec3 lightDir = normalize(-fs_in.tanLights.directionalLightDirection);
 	float diff = max(dot(normal, lightDir), 0.0);
 	vec4 diffuse = directionalLight.diffuse * (diff * diffMap);
 
@@ -199,7 +196,7 @@ vec4 calcPointLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 dif
 	vec4 ambient = pointLights[index].ambient * diffMap;
 
 	// diffuse
-	vec3 lightDir = normalize(pointLights[index].position - fs_in.FragPosition);
+	vec3 lightDir = normalize(fs_in.tanLights.pointLightPositions[index] - fs_in.tanLights.FragPosition);
 	float diff = max(dot(normal, lightDir), 0.0);
 	vec4 diffuse = pointLights[index].diffuse * (diff * diffMap);
 
@@ -273,8 +270,8 @@ float calcSpotLightShadow(int index, vec3 normal, vec3 viewVec, vec3 lightDir) {
 }
 
 vec4 calcSpotLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diffMap, vec4 specMap) {
-	vec3 lightDir = normalize(spotLights[index].position - fs_in.FragPosition);
-	float theta = dot(lightDir, normalize(-spotLights[index].direction));
+	vec3 lightDir = normalize(fs_in.tanLights.spotLightPositions[index] - fs_in.tanLights.FragPosition);
+	float theta = dot(lightDir, normalize(-fs_in.tanLights.spotLightDirections[index]));
 
 	// ambient
 	vec4 ambient = spotLights[index].ambient * diffMap;
@@ -317,7 +314,7 @@ vec4 calcSpotLight(int index, vec3 normal, vec3 viewVec, vec3 viewDir, vec4 diff
 
 		float shadow = calcSpotLightShadow(index, normal, viewVec, lightDir);
 
-		return vec4(ambient + (1.0 - shadow) * (diffuse + specular));
+		return ambient + (1.0 - shadow) * (diffuse + specular);
 	}
 	else {
 		// render just ambient
