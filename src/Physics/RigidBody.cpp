@@ -6,7 +6,8 @@
 RigidBody::RigidBody() {}
 
 RigidBody::RigidBody(std::string modelId, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass)
-	: modelId(modelId), position(position), rotation(rotation), size(size), mass(mass), velocity(0.0f), acceleration(0.0f), state(0) {
+	: modelId(modelId), position(position), rotation(rotation), size(size), mass(mass), velocity(0.0f), acceleration(0.0f), state(0),
+	lastCollision(COLLISION_THRESHOLD), lastCollisionID("") {
 	update(0.0f);
 }
 
@@ -57,4 +58,13 @@ void RigidBody::transferEnergy(float joules, glm::vec3 direction) {
 	glm::vec3 dV = sqrt(2 * abs(joules) / mass) * direction;
 
 	velocity += joules > 0 ? dV : -dV;
+}
+
+void RigidBody::handleCollision(RigidBody* inst, glm::vec3 norm) {
+	if (lastCollision >= COLLISION_THRESHOLD || lastCollisionID != inst->instanceId) {
+		this->velocity = glm::reflect(this->velocity, glm::normalize(norm));
+		lastCollision = 0.0f;
+	}
+
+	lastCollisionID = inst->instanceId;
 }

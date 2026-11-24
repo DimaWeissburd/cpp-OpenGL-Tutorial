@@ -6,7 +6,7 @@
 class Sphere : public Model {
 public:
 	Sphere(unsigned int maxNoInstances, glm::vec3 rotation, glm::vec3 size, float mass)
-		: Model("sphere", BoundTypes::SPHERE, maxNoInstances, glm::vec3(0.0f), rotation, size, mass, NO_TEX | DYNAMIC) {}
+		: Model("sphere", maxNoInstances, glm::vec3(0.0f), rotation, size, mass, NO_TEX | DYNAMIC) {}
 
 	void init() {
 		loadModel("Assets/Models/the_sphere/scene.gltf");

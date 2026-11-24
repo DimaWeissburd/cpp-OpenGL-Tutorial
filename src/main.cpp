@@ -53,7 +53,7 @@ Sphere sphere(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Lamp lamp(4, glm::vec3(0.0f), glm::vec3(1.0f));
 HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
-Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::radians(glm::vec3(-90.0f, -90.0f, 0.0f)), glm::vec3(20.0f), 1.0f, DYNAMIC);
+Model fox("fox", 1, glm::vec3(20.0f), glm::radians(glm::vec3(-90.0f, -90.0f, 0.0f)), glm::vec3(20.0f), 1.0f, DYNAMIC);
 Brickwall wall;
 
 Joystick joystick(0);
@@ -246,6 +246,11 @@ int main() {
         scene.renderShader(shader);
         renderScene(shader);
 
+        if (ini.getBool("debug", "show_bounding_boxes", false)) {
+            scene.renderShader(boxShader, false);
+            box.render(boxShader);
+        }
+
         scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 10.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
         scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 20.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
 
@@ -272,9 +277,9 @@ void renderScene(Shader shader) {
 }
 
 void launchItem(float dt) {
-    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.0f), glm::vec3(0.5f), 1.0f);
+    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.0f), glm::vec3(0.5f), 10.0f);
     if (rb) {
-        rb->transferEnergy(50.0f, camera.cameraFront);
+        rb->transferEnergy(10.0f, camera.cameraFront);
         rb->applyAcceleration(Environment::gravitationalAcceleration);
     }
 }

@@ -6,7 +6,7 @@
 class Plane : public Model {
 public:
     Plane()
-        : Model("plane", BoundTypes::AABB, CONST_INSTANCES, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.0f) {}
+        : Model("plane", CONST_INSTANCES, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.0f) {}
 
     void init(std::vector<Texture> textures) {
         int nVertices = 4;

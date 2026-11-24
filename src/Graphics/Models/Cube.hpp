@@ -9,7 +9,7 @@ public:
     Material material;
 
     Cube(unsigned int maxNoInstances, glm::vec3 rotation, glm::vec3 size, float mass, Material material = Material::red_plastic)
-        : Model("cube", BoundTypes::AABB, maxNoInstances, glm::vec3(0.0f), rotation, size, mass, CONST_INSTANCES | NO_TEX), material(material) {}
+        : Model("cube", maxNoInstances, glm::vec3(0.0f), rotation, size, mass, CONST_INSTANCES | NO_TEX), material(material) {}
 
     void init() {
         int nVertices = 36;

@@ -9,7 +9,7 @@
 class HandHeld : public Model {
 public:
     HandHeld(unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size)
-        : Model("HandHeld", BoundTypes::AABB, maxNoInstances, position, rotation, size, 1.0f, DYNAMIC) {
+        : Model("HandHeld", maxNoInstances, position, rotation, size, 1.0f, DYNAMIC) {
         rigidBody.position = position;
         rigidBody.size = size;
         rigidBody.mass = 1.0f;

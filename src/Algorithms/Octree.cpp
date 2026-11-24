@@ -272,12 +272,66 @@ bool Octree::node::insert(BoundingRegion object) {
 
 void Octree::node::checkCollisionsSelf(BoundingRegion object) {
     for (BoundingRegion boundingRegion : objects) {
+        if (boundingRegion.instance->instanceId == object.instance->instanceId) {
+            continue;
+        }
+
         if (boundingRegion.intersectsWith(object)) {
-            if (boundingRegion.instance->instanceId != object.instance->instanceId) {
-                //std::cout << "Instance " << boundingRegion.instance->instanceId
-                //    << " (" << boundingRegion.instance->modelId << ") collides with instance "
-                //    << object.instance->instanceId << " (" << object.instance->modelId << ")" << std::endl;
-                boundingRegion.intersectsWith(object);
+
+            unsigned int noFacesBr = boundingRegion.collisionMesh ? boundingRegion.collisionMesh->faces.size() : 0;
+            unsigned int noFacesObj = object.collisionMesh ? object.collisionMesh->faces.size() : 0;
+
+            glm::vec3 normal;
+
+            if (noFacesBr) {
+                unsigned int noFacesBr = boundingRegion.collisionMesh->faces.size();
+
+                if (noFacesObj) {
+                    unsigned int noFacesObj = object.collisionMesh->faces.size();
+
+                    for (unsigned int i = 0; i < noFacesBr; i++) {
+                        for (unsigned int j = 0; j < noFacesObj; j++) {
+                            if (boundingRegion.collisionMesh->faces[i].collidesWithFace(
+                                boundingRegion.instance,
+                                object.collisionMesh->faces[j],
+                                object.instance,
+                                normal
+                            )) {
+                                object.instance->handleCollision(boundingRegion.instance, normal);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    for (unsigned int i = 0; i < noFacesBr; i++) {
+                        if (boundingRegion.collisionMesh->faces[i].collidesWithSphere(
+                            boundingRegion.instance,
+                            object,
+                            normal
+                        )) {
+                            object.instance->handleCollision(boundingRegion.instance, normal);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                if (noFacesObj) {
+                    unsigned int noFacesObj = object.collisionMesh->faces.size();
+
+                    for (int i = 0; i < noFacesObj; i++) {
+                        if (object.collisionMesh->faces[i].collidesWithSphere(
+                            object.instance,
+                            boundingRegion,
+                            normal
+                        )) {
+                            object.instance->handleCollision(boundingRegion.instance, normal);
+                            break;
+                        }
+                    }
+                } else {
+                    normal = object.center - boundingRegion.center;
+                    object.instance->handleCollision(boundingRegion.instance, normal);
+                }
             }
         }
     }

@@ -7,6 +7,8 @@
 #define INSTANCE_DEAD  (unsigned char)0b00000001
 #define INSTANCE_MOVED (unsigned char)0b00000010
 
+#define COLLISION_THRESHOLD 0.05f
+
 class RigidBody {
 public:
 	unsigned char state;
@@ -39,6 +41,8 @@ public:
 	void applyImpulse(glm::vec3 direction, float magnitude, float dt);
 
 	void transferEnergy(float joules, glm::vec3 direction);
+
+	void handleCollision(RigidBody* inst, glm::vec3 norm);
 };
 
 #endif

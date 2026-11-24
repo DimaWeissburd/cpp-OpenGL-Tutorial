@@ -2,8 +2,8 @@
 #include "../Physics/Environment.h"
 #include "../Algorithms/States.hpp"
 
-Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags)
-    : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass), collision(nullptr) {}
+Model::Model(std::string id, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags)
+    : id(id), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass), collision(nullptr) {}
 
 RigidBody* Model::generateInstance(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass) {
     if (currentNoInstances >= maxNoInstances) {
@@ -169,7 +169,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
 
-    BoundingRegion boundingRegion(boundType);
+    BoundingRegion boundingRegion(BoundTypes::SPHERE);
     glm::vec3 min((float)(~0));
     glm::vec3 max(-(float)(~0));
 
@@ -211,27 +211,21 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         vertices.push_back(vertex);
     }
 
-    if (boundType == BoundTypes::AABB) {
-        boundingRegion.min = min;
-        boundingRegion.ogMin = min;
-        boundingRegion.max = max;
-        boundingRegion.ogMax = max;
-    } else {
-        boundingRegion.center = BoundingRegion(min, max).calculateCenter();
-        boundingRegion.ogCenter = boundingRegion.center;
-        float maxRadiusSquared = 0.0f;
-        for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-            float radiusSquared = 0.0f;
-            for (int j = 0; j < 3; j++) {
-                radiusSquared += (vertices[i].position[j] - boundingRegion.center[j]) * (vertices[i].position[j] - boundingRegion.center[j]);
-            }
-            if (radiusSquared > maxRadiusSquared) {
-                maxRadiusSquared = radiusSquared;
-            }
+    boundingRegion.center = (min + max) / 2.0f;
+    boundingRegion.ogCenter = boundingRegion.center;
+    boundingRegion.collisionMesh = NULL;
+    float maxRadiusSquared = 0.0f;
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+        float radiusSquared = 0.0f;
+        for (int j = 0; j < 3; j++) {
+            radiusSquared += (vertices[i].position[j] - boundingRegion.center[j]) * (vertices[i].position[j] - boundingRegion.center[j]);
         }
-        boundingRegion.radius = sqrt(maxRadiusSquared);
-        boundingRegion.ogRadius = boundingRegion.radius;
+        if (radiusSquared > maxRadiusSquared) {
+            maxRadiusSquared = radiusSquared;
+        }
     }
+    boundingRegion.radius = sqrt(maxRadiusSquared);
+    boundingRegion.ogRadius = boundingRegion.radius;
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
