@@ -120,8 +120,15 @@ void Model::render(Shader shader, float dt, Scene* scene) {
 }
 
 void Model::cleanup() {
-    for (Mesh mesh : meshes) {
-        mesh.cleanup();
+    for (unsigned int i = 0, len = instances.size(); i < len; i++) {
+        if (instances[i]) {
+            free(instances[i]);
+        }
+    }
+    instances.clear();
+
+    for (unsigned int i = 0; i < meshes.size(); i++) {
+        meshes[i].cleanup();
     }
 
     modelVBO.cleanup();
@@ -170,8 +177,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<Texture> textures;
 
     BoundingRegion boundingRegion(BoundTypes::SPHERE);
-    glm::vec3 min((float)(~0));
-    glm::vec3 max(-(float)(~0));
+    glm::vec3 min(std::numeric_limits<float>::max());
+    glm::vec3 max(std::numeric_limits<float>::min());
 
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex;

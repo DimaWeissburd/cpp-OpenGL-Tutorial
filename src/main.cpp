@@ -265,8 +265,8 @@ int main() {
             box.render(boxShader);
         }
 
-        scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 10.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
-        scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 20.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
+        //scene.renderText("Helvetica", textShader, "Time: " + scene.variableLog["Time"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 10.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
+        //scene.renderText("Helvetica", textShader, "FPS: " + scene.variableLog["FPS"].dump(), SCR_WIDTH - 75.0f, SCR_HEIGHT - 20.0f, glm::vec2(0.3f), glm::vec3(0.5f, 0.6f, 1.0f));
 
         scene.newFrame(box);
         scene.clearDeadInstances();

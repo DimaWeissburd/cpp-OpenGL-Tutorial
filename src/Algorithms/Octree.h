@@ -8,7 +8,6 @@
 #include "States.hpp"
 #include "Bounds.h"
 #include "Ray.h"
-#include "Trie.hpp"
 #include "../Graphics/Model.h"
 
 #define NO_CHILDREN 8
@@ -56,7 +55,7 @@ namespace Octree {
 
 		node(BoundingRegion bounds, std::vector<BoundingRegion> objectList);
 
-		void addToPending(RigidBody* instance, Trie::Trie<Model*> models);
+		void addToPending(RigidBody* instance, Model* model);
 
 		void build();
 

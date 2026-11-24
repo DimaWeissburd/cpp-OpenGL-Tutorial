@@ -85,6 +85,9 @@ bool Scene::init() {
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+	models = avl_createEmptyRoot(strkeycmp);
+	instances = Trie::Trie<RigidBody*>(Trie::ascii_lowercase);
+
 	octree = new Octree::node(BoundingRegion(glm::vec3(-16.0f), glm::vec3(16.0f)));
 
 	if (FT_Init_FreeType(&ft)) {
@@ -92,15 +95,18 @@ bool Scene::init() {
 		return false;
 	}
 
-	fonts.insert("Helvetica", TextRenderer(32));
-	if (!fonts["Helvetica"].loadFont(ft, "Assets/Fonts/Helvetica.ttf")) {
-		std::cout << "Could not load font" << std::endl;
-		return false;
-	}
-
-	FT_Done_FreeType(ft);
+	fonts = avl_createEmptyRoot(strkeycmp);
 
 	return true;
+}
+
+bool Scene::registerFont(TextRenderer* tr, std::string name, std::string path) {
+	if (tr->loadFont(ft, path)) {
+		fonts = avl_insert(fonts, (void*)name.c_str(), tr);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 void Scene::prepare(Box& box, std::vector<Shader> shaders) {
@@ -371,29 +377,36 @@ void Scene::renderSpotLightShader(Shader shader, unsigned int index) {
 }
 
 void Scene::renderInstances(std::string modelId, Shader shader, float dt) {
-	shader.activate();
-	models[modelId]->render(shader, dt, this);
+	void* val = avl_get(models, (void*)modelId.c_str());
+	if (val) {
+		shader.activate();
+		((Model*)val)->render(shader, dt, this);
+	}
 }
 
 void Scene::renderText(std::string font, Shader shader, std::string text, float x, float y, glm::vec2 scale, glm::vec3 color) {
-	shader.activate();
-	shader.setMat4("projection", textProjection);
-	fonts[font].render(shader, text, x, y, scale, color);
+	void* val = avl_get(fonts, (void*)font.c_str());
+	if (val) {
+		shader.activate();
+		shader.setMat4("projection", textProjection);
+		((TextRenderer*)val)->render(shader, text, x, y, scale, color);
+	}
 }
 
 void Scene::cleanup() {
-	models.traverse([](Model* model) -> void {
-		model->cleanup();
-	});
-
-	models.cleanup();
 	instances.cleanup();
 
-	fonts.traverse([](TextRenderer tr) -> void {
-		tr.cleanup();
+	avl_postorderTraverse(models, [](avl* node) -> void {
+		((Model*)node->val)->cleanup();
 	});
 
-	fonts.cleanup();
+	avl_free(models);
+
+	avl_postorderTraverse(fonts, [](avl* node) -> void {
+		((TextRenderer*)node->val)->cleanup();
+	});
+
+	avl_free(fonts);
 
 	octree->destroy();
 
@@ -432,43 +445,49 @@ void Scene::updateCameraMatrices(int idx)
 }
 
 void Scene::registerModel(Model* model) {
-	models.insert(model->id, model);
+	models = avl_insert(models, (void*)model->id.c_str(), model);
 }
 
 RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass) {
-	RigidBody* rigidBody = models[modelId]->generateInstance(position, rotation, size, mass);
-	if (rigidBody) {
-		std::string id = generateId();
-		rigidBody->instanceId = id;
-		instances.insert(id, rigidBody);
-		octree->addToPending(rigidBody, models);
-		return rigidBody;
+	void* val = avl_get(models, (void*)modelId.c_str());
+	if (val) {
+		Model* model = (Model*)val;
+		RigidBody* rigidBody = model->generateInstance(position, rotation, size, mass);
+		if (rigidBody) {
+			std::string id = generateId();
+			rigidBody->instanceId = id;
+			instances.insert(rigidBody->instanceId, rigidBody);
+			octree->addToPending(rigidBody, model);
+			return rigidBody;
+		}
 	}
 	return nullptr;
 }
 
 void Scene::initInstances() {
-	models.traverse([](Model* model) -> void {
-		model->initInstances();
+	avl_inorderTraverse(models, [](avl* node) -> void {
+		((Model*)node->val)->initInstances();
 	});
 }
 
 void Scene::loadModels() {
-	models.traverse([](Model* model) -> void {
-		model->init();
+	avl_inorderTraverse(models, [](avl* node) -> void {
+		((Model*)node->val)->init();
 	});
 }
 
 void Scene::removeInstance(std::string instanceId) {
-	RigidBody* rb = instances[instanceId];
-	if (!rb) return;
-	models[rb->modelId]->removeInstance(instanceId);
+	RigidBody* instance = instances[instanceId];
+	std::string targetModel = instance->modelId;
+	Model* model = (Model*)avl_get(models, (void*)targetModel.c_str());
+	model->removeInstance(instanceId);
+	instances[instanceId] = NULL;
 	instances.erase(instanceId);
+	free(instance);
 }
 
 void Scene::markForDeletion(std::string instanceId) {
 	RigidBody* instance = instances[instanceId];
-	if (!instance || States::isActive(&instance->state, INSTANCE_DEAD)) return;
 	States::activate(&instance->state, INSTANCE_DEAD);
 	instancesToDelete.push_back(instance);
 }

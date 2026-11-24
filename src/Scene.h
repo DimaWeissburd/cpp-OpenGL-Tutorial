@@ -19,6 +19,7 @@
 #include <Graphics/Models/Box.hpp>
 #include <IO/Keyboard.h>
 #include <IO/Mouse.h>
+#include <Algorithms/Avl.h>
 #include <Algorithms/Octree.h>
 #include <Algorithms/States.hpp>
 #include <Algorithms/Trie.hpp>
@@ -32,7 +33,7 @@ class IniFile;
 
 class Scene {
 public:
-	Trie::Trie<Model*> models;
+	avl* models;
 	Trie::Trie<RigidBody*> instances;
 
 	std::vector<RigidBody*> instancesToDelete;
@@ -42,7 +43,7 @@ public:
 	jsoncpp::json variableLog;
 
 	FT_Library ft;
-	Trie::Trie<TextRenderer> fonts;
+	avl* fonts;
 
 	FramebufferObject defaultFBO;
 
@@ -54,6 +55,8 @@ public:
 	Scene(const IniFile& ini, int glfwVersionMajor, int glfwVersionMinor, const char* title, unsigned int screenWidth, unsigned int screenHeight);
 
 	bool init();
+
+	bool registerFont(TextRenderer* tr, std::string name, std::string path);
 
 	void prepare(Box& box, std::vector<Shader> shaders);
 

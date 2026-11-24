@@ -97,7 +97,14 @@ bool BoundingRegion::intersectsWith(BoundingRegion boundingRegion) {
 		}
 		return true;
 	} else if (type == BoundTypes::SPHERE && boundingRegion.type == BoundTypes::SPHERE) {
-		return glm::length(center - boundingRegion.center) < (radius + boundingRegion.radius);
+		glm::vec3 centerDiff = center - boundingRegion.center;
+		float distSquared = 0.0f;
+		for (int i = 0; i < 3; i++) {
+			distSquared += centerDiff[i] * centerDiff[i];
+		}
+		float maxMagSquared = radius + boundingRegion.radius;
+		maxMagSquared *= maxMagSquared;
+		return distSquared <= maxMagSquared;
 	} else if (type == BoundTypes::SPHERE) {
 		float distSquared = 0.0f;
 		for (int i = 0; i < 3; i++) {

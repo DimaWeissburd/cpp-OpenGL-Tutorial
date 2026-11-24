@@ -40,8 +40,8 @@ Octree::node::node(BoundingRegion bounds, std::vector<BoundingRegion> objectList
     objects.insert(objects.end(), objectList.begin(), objectList.end());
 }
 
-void Octree::node::addToPending(RigidBody* instance, Trie::Trie<Model*> models) {
-    for (BoundingRegion boundingRegion : models[instance->modelId]->boundingRegions) {
+void Octree::node::addToPending(RigidBody* instance, Model* model) {
+    for (BoundingRegion boundingRegion : model->boundingRegions) {
         boundingRegion.instance = instance;
         boundingRegion.transform();
         queue.push(boundingRegion);
