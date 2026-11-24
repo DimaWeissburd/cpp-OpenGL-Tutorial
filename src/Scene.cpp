@@ -392,8 +392,8 @@ void Scene::registerModel(Model* model) {
 	models.insert(model->id, model);
 }
 
-RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 position, glm::vec3 size, float mass) {
-	RigidBody* rigidBody = models[modelId]->generateInstance(position, size, mass);
+RigidBody* Scene::generateInstance(std::string modelId, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass) {
+	RigidBody* rigidBody = models[modelId]->generateInstance(position, rotation, size, mass);
 	if (rigidBody) {
 		std::string id = generateId();
 		rigidBody->instanceId = id;

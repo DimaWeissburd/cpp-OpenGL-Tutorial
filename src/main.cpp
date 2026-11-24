@@ -53,7 +53,7 @@ Sphere sphere(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Cube cube(10, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 Lamp lamp(4, glm::vec3(0.0f), glm::vec3(1.0f));
 HandHeld magicStaff(1, camera.cameraPosition, glm::vec3(135.0f, 90.0f, 0.0f), glm::vec3(0.001f));
-Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::vec3(-90.0f, -90.0f, 0.0f), glm::vec3(20.0f), 1.0f, CONST_INSTANCES);
+Model fox("fox", BoundTypes::AABB, 1, glm::vec3(20.0f), glm::radians(glm::vec3(-90.0f, -90.0f, 0.0f)), glm::vec3(20.0f), 1.0f, DYNAMIC);
 Brickwall wall;
 
 Joystick joystick(0);
@@ -106,11 +106,11 @@ int main() {
 
     magicStaff.loadModel("Assets/Models/magic_staff/scene.gltf");
     scene.registerModel(&magicStaff);
-    scene.generateInstance(magicStaff.id, glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
+    scene.generateInstance(magicStaff.id, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.0f);
 
     fox.loadModel("Assets/Models/fox_in_a_cape/scene.gltf");
     scene.registerModel(&fox);
-    scene.generateInstance(fox.id, fox.position, fox.size, fox.mass);
+    scene.generateInstance(fox.id, fox.position, fox.rotation, fox.size, fox.mass);
 
     scene.loadModels();
 
@@ -144,7 +144,7 @@ int main() {
             ambient, diffuse, specular,
             0.5f, 50.0f
         );
-        scene.generateInstance(lamp.id, pointLightPositions[i], glm::vec3(0.25f), 0.25);
+        scene.generateInstance(lamp.id, pointLightPositions[i], glm::vec3(0.0f), glm::vec3(0.25f), 0.25);
         scene.pointLights.push_back(&pointLights[i]);
         States::activateIndex(&scene.activePointLights, i);
     }
@@ -160,7 +160,7 @@ int main() {
 
     scene.activeSpotLights = 1;
 
-    scene.generateInstance(cube.id, glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(20.0f, 0.1f, 20.0f), 101.0f);
+    scene.generateInstance(cube.id, glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(0.0f), glm::vec3(20.0f, 0.1f, 20.0f), 101.0f);
     glm::vec3 cubePositions[] = {
         { 1.0f, 3.0f, -5.0f },
         { -7.25f, 2.1f, 1.5f },
@@ -173,10 +173,10 @@ int main() {
         { 0.0f, 5.0f, 0.0f },
     };
     for (unsigned int i = 0; i < 9; i++) {
-        scene.generateInstance(cube.id, cubePositions[i], glm::vec3(0.5f), 1.0f);
+        scene.generateInstance(cube.id, cubePositions[i], glm::vec3(0.0f), glm::vec3(0.5f), 1.0f);
     }
 
-    scene.generateInstance(wall.id, glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(10.0f), 1.0f);
+    scene.generateInstance(wall.id, glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f), glm::vec3(10.0f), 1.0f);
     
     scene.initInstances();
     scene.prepare(box, { shader });
@@ -205,7 +205,7 @@ int main() {
         processInput(dt);
         scene.updateLightUBO();
 
-        fox.rotation.y += 10.0f * dt;
+        fox.instances[0]->rotation.y += glm::radians(10.0f) * dt;
 
         for (int i = 0; i < sphere.currentNoInstances; i++) {
             if (glm::length(camera.cameraPosition - sphere.instances[i]->position) > 250.0f) {
@@ -272,7 +272,7 @@ void renderScene(Shader shader) {
 }
 
 void launchItem(float dt) {
-    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.5f), 1.0f);
+    RigidBody* rb = scene.generateInstance(sphere.id, camera.cameraPosition, glm::vec3(0.0f), glm::vec3(0.5f), 1.0f);
     if (rb) {
         rb->transferEnergy(50.0f, camera.cameraFront);
         rb->applyAcceleration(Environment::gravitationalAcceleration);

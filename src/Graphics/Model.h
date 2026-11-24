@@ -25,7 +25,7 @@ class Scene;
 class Model {
 public:
     std::string id;
-    RigidBody rb;
+    RigidBody rigidBody;
     glm::vec3 position;
     glm::vec3 rotation;
     glm::vec3 size;
@@ -48,7 +48,7 @@ public:
 
     virtual void init();
 
-    RigidBody* generateInstance(glm::vec3 position, glm::vec3 size, float mass);
+    RigidBody* generateInstance(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass);
 
     void initInstances();
 
@@ -58,7 +58,7 @@ public:
 
     void addMesh(Mesh* mesh);
 
-    virtual void render(Shader shader, float dt, Scene* scene, glm::mat4 model = glm::mat4(1.0f));
+    virtual void render(Shader shader, float dt, Scene* scene);
 
     void cleanup();
 
@@ -86,8 +86,8 @@ protected:
         bool pad = false);
     std::vector<Texture> loadTextures(aiMaterial* mat, aiTextureType type);
 
-    BufferObject positionVBO;
-    BufferObject sizeVBO;
+    BufferObject modelVBO;
+    BufferObject normalModelVBO;
 };
 
 #endif

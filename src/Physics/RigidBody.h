@@ -15,7 +15,7 @@ public:
 	glm::vec3 velocity;
 	glm::vec3 acceleration;
 	glm::vec3 size;
-	glm::vec3 rot;
+	glm::vec3 rotation;
 	glm::mat4 model;
 	glm::mat3 normalModel;
 	std::string modelId;
@@ -25,7 +25,7 @@ public:
 
 	RigidBody();
 
-	RigidBody(std::string modelId, glm::vec3 position = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f);
+	RigidBody(std::string modelId, glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f);
 
 	void update(float dt);
 

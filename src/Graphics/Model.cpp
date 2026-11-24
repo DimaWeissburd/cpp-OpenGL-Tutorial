@@ -5,51 +5,59 @@
 Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags)
     : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass), collision(nullptr) {}
 
-RigidBody* Model::generateInstance(glm::vec3 position, glm::vec3 size, float mass) {
+RigidBody* Model::generateInstance(glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass) {
     if (currentNoInstances >= maxNoInstances) {
         return nullptr;
     }
-    instances.push_back(new RigidBody(id, position, size, mass));
+    instances.push_back(new RigidBody(id, position, rotation, size, mass));
     return instances[currentNoInstances++];
 }
 
 void Model::initInstances() {
-    glm::vec3* positionData = nullptr;
-    glm::vec3* sizeData = nullptr;
     GLenum usage = GL_DYNAMIC_DRAW;
+    glm::mat4* modelData = nullptr;
+    glm::mat3* normalModelData = nullptr;
 
-    std::vector<glm::vec3> positions, sizes;
+    std::vector<glm::mat4> models(currentNoInstances);
+    std::vector<glm::mat3> normalModels(currentNoInstances);
 
     if (States::isActive(&switches, CONST_INSTANCES)) {
         for (int i = 0; i < currentNoInstances; i++) {
-            positions.push_back(instances[i]->position);
-            sizes.push_back(instances[i]->size);
+            models[i] = instances[i]->model;
+            normalModels[i] = instances[i]->normalModel;
         }
 
-        if (positions.size() > 0) {
-            positionData = &positions[0];
-            sizeData = &sizes[0];
+        if (currentNoInstances) {
+            modelData = &models[0];
+            normalModelData = &normalModels[0];
         }
 
         usage = GL_STATIC_DRAW;
     }
 
-    positionVBO = BufferObject(GL_ARRAY_BUFFER);
-    positionVBO.generate();
-    positionVBO.bind();
-    positionVBO.setData<glm::vec3>(UPPER_BOUND, positionData, GL_DYNAMIC_DRAW);
-
-    sizeVBO = BufferObject(GL_ARRAY_BUFFER);
-    sizeVBO.generate();
-    sizeVBO.bind();
-    sizeVBO.setData<glm::vec3>(UPPER_BOUND, sizeData, GL_DYNAMIC_DRAW);
+    modelVBO = BufferObject(GL_ARRAY_BUFFER);
+    modelVBO.generate();
+    modelVBO.bind();
+    modelVBO.setData<glm::mat4>(UPPER_BOUND, modelData, usage);
+    normalModelVBO = BufferObject(GL_ARRAY_BUFFER);
+    normalModelVBO.generate();
+    normalModelVBO.bind();
+    normalModelVBO.setData<glm::mat3>(UPPER_BOUND, normalModelData, usage);
 
     for (unsigned int i = 0, size = meshes.size(); i < size; i++) {
         meshes[i].VAO.bind();
-        positionVBO.bind();
-        positionVBO.setAttPointer<glm::vec3>(4, 3, GL_FLOAT, 1, 0, 1);
-        sizeVBO.bind();
-        sizeVBO.setAttPointer<glm::vec3>(5, 3, GL_FLOAT, 1, 0, 1);
+
+        modelVBO.bind();
+        modelVBO.setAttPointer<glm::vec4>(4, 4, GL_FLOAT, 4, 0, 1);
+        modelVBO.setAttPointer<glm::vec4>(5, 4, GL_FLOAT, 4, 1, 1);
+        modelVBO.setAttPointer<glm::vec4>(6, 4, GL_FLOAT, 4, 2, 1);
+        modelVBO.setAttPointer<glm::vec4>(7, 4, GL_FLOAT, 4, 3, 1);
+
+        normalModelVBO.bind();
+        normalModelVBO.setAttPointer<glm::vec3>(8, 3, GL_FLOAT, 3, 0, 1);
+        normalModelVBO.setAttPointer<glm::vec3>(9, 3, GL_FLOAT, 3, 1, 1);
+        normalModelVBO.setAttPointer<glm::vec3>(10, 3, GL_FLOAT, 3, 2, 1);
+
         ArrayObject::clear();
     }
 }
@@ -77,22 +85,10 @@ unsigned int Model::getIdx(std::string id) {
 
 void Model::init() {}
 
-void Model::render(Shader shader, float dt, Scene* scene, glm::mat4 model) {
-    if (!instances.empty() && rotation != glm::vec3(0.0f)) {
-        // rotate around the instance's own position, not the world origin
-        glm::vec3 p = instances[0]->position;
-        model = glm::translate(model, p);
-        model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0, 0, 1));
-        model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0, 1, 0));
-        model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1, 0, 0));
-        model = glm::translate(model, -p);
-    }
-
-    shader.setMat4("model", model);
-    shader.setMat3("normalModel", glm::transpose(glm::inverse(glm::mat3(model))));
-
+void Model::render(Shader shader, float dt, Scene* scene) {
     if (!States::isActive(&switches, CONST_INSTANCES)) {
-        std::vector<glm::vec3> positions, sizes;
+        std::vector<glm::mat4> models(currentNoInstances);
+        std::vector<glm::mat3> normalModels(currentNoInstances);
 
         bool doUpdate = States::isActive(&switches, DYNAMIC);
 
@@ -104,15 +100,16 @@ void Model::render(Shader shader, float dt, Scene* scene, glm::mat4 model) {
                 States::deactivate(&instances[i]->state, INSTANCE_MOVED);
             }
 
-            positions.push_back(instances[i]->position);
-            sizes.push_back(instances[i]->size);
+            models[i] = instances[i]->model;
+            normalModels[i] = instances[i]->normalModel;
         }
 
-        positionVBO.bind();
-        positionVBO.updateData<glm::vec3>(0, currentNoInstances, &positions[0]);
-
-        sizeVBO.bind();
-        sizeVBO.updateData<glm::vec3>(0, currentNoInstances, &sizes[0]);
+        if (currentNoInstances) {
+            modelVBO.bind();
+            modelVBO.updateData<glm::mat4>(0, currentNoInstances, &models[0]);
+            normalModelVBO.bind();
+            normalModelVBO.updateData<glm::mat3>(0, currentNoInstances, &normalModels[0]);
+        }
     }
 
     shader.setFloat("material.shininess", 0.05f);
@@ -127,8 +124,8 @@ void Model::cleanup() {
         mesh.cleanup();
     }
 
-    positionVBO.cleanup();
-    sizeVBO.cleanup();
+    modelVBO.cleanup();
+    normalModelVBO.cleanup();
 }
 
 void Model::loadModel(std::string path) {
@@ -266,7 +263,6 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             std::vector<Texture> normalMaps = loadTextures(material, aiTextureType_NORMALS);
             if (normalMaps.empty())
                 normalMaps = loadTextures(material, aiTextureType_HEIGHT); // .obj stores normal maps as "bump"
-            textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
             textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 
             ret = Mesh(boundingRegion, textures);

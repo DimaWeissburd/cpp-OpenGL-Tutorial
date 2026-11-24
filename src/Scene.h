@@ -78,7 +78,7 @@ public:
 	void setWindowColor(float r, float g, float b, float a);
 
 	void registerModel(Model* model);
-	RigidBody* generateInstance(std::string modelId, glm::vec3 position, glm::vec3 size, float mass);
+	RigidBody* generateInstance(std::string modelId, glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f);
 	void initInstances();
 	void loadModels();
 	void removeInstance(std::string instanceId);
