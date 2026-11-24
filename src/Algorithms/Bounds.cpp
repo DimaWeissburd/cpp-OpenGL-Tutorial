@@ -1,5 +1,6 @@
 #include "Bounds.h"
 #include "Octree.h"
+#include "../Physics/Collisionmesh.h"
 
 bool BoundingRegion::operator==(const BoundingRegion& boundingRegion) const {
 	if (type != boundingRegion.type) {

@@ -25,22 +25,23 @@ public:
              0.5f, -0.5f, 0.0f
         };
 
-        std::vector<unsigned int> indices = {
+        unsigned int indices[] = {
             0, 1, 3,
             1, 2, 3
         };
 
-        BoundingRegion br(glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.5f, 0.5f, 0.0f));
+        BoundingRegion br(glm::vec3(0.0f), 1 / sqrt(2.0f));
 
-        std::vector<Vertex> vertexList = Vertex::genList(quadVertices, nVertices);
-        Vertex::calcTanVectors(vertexList, indices);
+        Mesh ret = processMesh(br,
+            nVertices, quadVertices,
+            6, indices,
+            true,
+            nVertices, collisionVertices,
+            2, indices);
 
-        Mesh ret(br, textures);
+        ret.setupTextures(textures);
 
-        ret.loadData(vertexList, indices, true);
-
-        meshes.push_back(ret);
-        boundingRegions.push_back(br);
+        addMesh(&ret);
     }
 };
 

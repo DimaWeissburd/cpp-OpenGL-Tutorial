@@ -7,6 +7,7 @@
 namespace Octree {
 	class node;
 }
+class CollisionMesh;
 
 enum class BoundTypes : unsigned char {
 	AABB = 0x00,
@@ -20,6 +21,7 @@ public:
 	BoundTypes type;
 
 	RigidBody* instance;
+	CollisionMesh* collisionMesh;
 
 	Octree::node* cell;
 

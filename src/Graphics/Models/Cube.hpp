@@ -59,24 +59,47 @@ public:
             -0.5f,  0.5f, -0.5f,     0.0f,  1.0f,  0.0f,    0.0f, 1.0f
         };
 
-        std::vector<unsigned int> indices(nVertices);
-        for (unsigned int i = 0; i < nVertices; i++) {
-            indices[i] = i;
-        }
+        float collisionVertices[] = {
+            -0.5f, -0.5f, -0.5f,
+            -0.5f, -0.5f,  0.5f,
+            -0.5f,  0.5f, -0.5f,
+            -0.5f,  0.5f,  0.5f,
+             0.5f, -0.5f, -0.5f,
+             0.5f, -0.5f,  0.5f,
+             0.5f,  0.5f, -0.5f,
+             0.5f,  0.5f,  0.5f
+        };
+        unsigned int collisionIndices[] = {
+            0, 4, 6,
+            6, 2, 0,
 
-        BoundingRegion boundingRegion(glm::vec3(-0.5f), glm::vec3(0.5f));
+            1, 5, 7,
+            7, 3, 1,
 
-        aiColor4D diff(material.diffuse.r, material.diffuse.g, material.diffuse.b, 1.0f);
-        aiColor4D spec(material.specular.r, material.specular.g, material.specular.b, 1.0f);
+            3, 2, 0,
+            0, 1, 3,
 
-        std::vector<Vertex> vertexList = Vertex::genList(vertices, nVertices);
-        Vertex::calcTanVectors(vertexList, indices);
+            7, 6, 4,
+            4, 5, 7,
 
-        Mesh ret(boundingRegion, diff, spec);
-        ret.loadData(vertexList, indices);
+            0, 4, 5,
+            5, 1, 0,
 
-        meshes.push_back(ret);
-        boundingRegions.push_back(boundingRegion);
+            2, 6, 7,
+            7, 3, 2
+        };
+
+        BoundingRegion br(glm::vec3(0.0f), sqrt(3.0f) / 2.0f);
+
+        Mesh ret = processMesh(br,
+            nVertices, vertices,
+            nVertices, NULL,
+            true,
+            8, collisionVertices,
+            12, collisionIndices);
+        ret.setupMaterial(material);
+
+        addMesh(&ret);
     }
 };
 

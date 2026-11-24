@@ -15,8 +15,13 @@ public:
 	glm::vec3 velocity;
 	glm::vec3 acceleration;
 	glm::vec3 size;
+	glm::vec3 rot;
+	glm::mat4 model;
+	glm::mat3 normalModel;
 	std::string modelId;
 	std::string instanceId;
+	float lastCollision;
+	std::string lastCollisionID;
 
 	RigidBody();
 

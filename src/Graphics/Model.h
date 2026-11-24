@@ -11,6 +11,7 @@
 #include <vector>
 #include "Mesh.h"
 #include "Models/Box.hpp"
+#include "../Physics/CollisionModel.h"
 #include "../Physics/RigidBody.h"
 #include "../Algorithms/Bounds.h"
 #include "../Scene.h"
@@ -33,6 +34,7 @@ public:
     BoundTypes boundType;
 
     std::vector<Mesh> meshes;
+    CollisionModel* collision;
     std::vector<BoundingRegion> boundingRegions;
 
     std::vector<RigidBody*> instances;
@@ -51,6 +53,10 @@ public:
     void initInstances();
 
     void loadModel(std::string path);
+
+    void enableCollisionModel();
+
+    void addMesh(Mesh* mesh);
 
     virtual void render(Shader shader, float dt, Scene* scene, glm::mat4 model = glm::mat4(1.0f));
 
@@ -71,6 +77,13 @@ protected:
 
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+    Mesh processMesh(BoundingRegion br,
+        unsigned int noVertices, float* vertices,
+        unsigned int noIndices, unsigned int* indices,
+        bool calcTanVectors = true,
+        unsigned int nCollisionPoints = 0, float* collisionPoints = NULL,
+        unsigned int nCollisionFaces = 0, unsigned int* collisionIndices = NULL,
+        bool pad = false);
     std::vector<Texture> loadTextures(aiMaterial* mat, aiTextureType type);
 
     BufferObject positionVBO;

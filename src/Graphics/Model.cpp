@@ -3,7 +3,7 @@
 #include "../Algorithms/States.hpp"
 
 Model::Model(std::string id, BoundTypes boundType, unsigned int maxNoInstances, glm::vec3 position, glm::vec3 rotation, glm::vec3 size, float mass, unsigned int flags)
-    : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass) {}
+    : id(id), boundType(boundType), switches(flags), currentNoInstances(0), maxNoInstances(maxNoInstances), position(position), rotation(rotation), size(size), mass(mass), collision(nullptr) {}
 
 RigidBody* Model::generateInstance(glm::vec3 position, glm::vec3 size, float mass) {
     if (currentNoInstances >= maxNoInstances) {
@@ -144,12 +144,22 @@ void Model::loadModel(std::string path) {
     processNode(scene->mRootNode, scene);
 }
 
+void Model::enableCollisionModel() {
+    if (!this->collision) {
+        this->collision = new CollisionModel(this);
+    }
+}
+
+void Model::addMesh(Mesh* mesh) {
+    meshes.push_back(*mesh);
+    boundingRegions.push_back(mesh->boundingRegion);
+}
+
 void Model::processNode(aiNode* node, const aiScene* scene) {
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         Mesh newMesh = processMesh(mesh, scene);
-        meshes.push_back(newMesh);
-        boundingRegions.push_back(newMesh.boundingRegion);
+        addMesh(&newMesh);
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -264,6 +274,39 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     }
 
     ret.loadData(vertices, indices);
+    return ret;
+}
+
+Mesh Model::processMesh(BoundingRegion br,
+    unsigned int noVertices, float* vertices,
+    unsigned int noIndices, unsigned int* indices,
+    bool calcTanVectors,
+    unsigned int nCollisionPoints, float* collisionPoints,
+    unsigned int nCollisionFaces, unsigned int* collisionIndices,
+    bool pad) {
+    std::vector<Vertex> vertexList = Vertex::genList(vertices, noVertices);
+
+    std::vector<unsigned int> indexList(noIndices);
+    if (indices) {
+        memcpy(indexList.data(), indices, noIndices * sizeof(unsigned int));
+    } else {
+        for (unsigned int i = 0; i < noIndices; i++) {
+            indexList[i] = i;
+        }
+    }
+
+    if (calcTanVectors) {
+        Vertex::calcTanVectors(vertexList, indexList);
+    }
+
+    Mesh ret(br);
+    ret.loadData(vertexList, indexList, pad);
+
+    if (nCollisionPoints) {
+        enableCollisionModel();
+        ret.loadCollisionMesh(nCollisionPoints, collisionPoints, nCollisionFaces, collisionIndices);
+    }
+
     return ret;
 }
 

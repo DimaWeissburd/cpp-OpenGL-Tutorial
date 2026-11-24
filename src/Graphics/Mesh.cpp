@@ -74,13 +74,27 @@ void Vertex::calcTanVectors(std::vector<Vertex>& list, std::vector<unsigned int>
     }
 }
 
-Mesh::Mesh() {}
+Mesh::Mesh()
+    : collision(NULL) {}
+
+Mesh::Mesh(BoundingRegion boundingRegion)
+    : boundingRegion(boundingRegion), collision(NULL) {}
 
 Mesh::Mesh(BoundingRegion boundingRegion, std::vector<Texture> textures)
-    : boundingRegion(boundingRegion), textures(textures), noTex(false) {}
+    : Mesh(boundingRegion) {
+    setupTextures(textures);
+}
 
-Mesh::Mesh(BoundingRegion boundingRegion, aiColor4D diffuse, aiColor4D specular)
-    : boundingRegion(boundingRegion), diffuse(diffuse), specular(specular), noTex(true) {}
+// initialize as material object
+Mesh::Mesh(BoundingRegion boundingRegion, aiColor4D diff, aiColor4D spec)
+    : Mesh(boundingRegion) {
+    setupColors(diff, spec);
+}
+
+Mesh::Mesh(BoundingRegion boundingRegion, Material m)
+    : Mesh(boundingRegion) {
+    setupMaterial(m);
+}
 
 void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, bool pad) {
     this->vertices = _vertices;
@@ -114,6 +128,28 @@ void Mesh::loadData(std::vector<Vertex> _vertices, std::vector<unsigned int> _in
     VAO["VBO"].clear();
 
     ArrayObject::clear();
+}
+
+void Mesh::loadCollisionMesh(unsigned int nPoints, float* coordinates, unsigned int nFaces, unsigned int* indices) {
+    this->collision = new CollisionMesh(nPoints, coordinates, nFaces, indices);
+    this->boundingRegion = this->collision->boundingRegion;
+}
+
+void Mesh::setupTextures(std::vector<Texture> textures) {
+    this->noTex = false;
+    this->textures.insert(this->textures.end(), textures.begin(), textures.end());
+}
+
+void Mesh::setupColors(aiColor4D diff, aiColor4D spec) {
+    this->noTex = true;
+    this->diffuse = diff;
+    this->specular = spec;
+}
+
+void Mesh::setupMaterial(Material mat) {
+    this->noTex = true;
+    this->diffuse = { mat.diffuse.r, mat.diffuse.g, mat.diffuse.b, 1.0f };
+    this->specular = { mat.specular.r, mat.specular.g, mat.specular.b, 1.0f };
 }
 
 void Mesh::render(Shader shader, unsigned int noInstances) {
