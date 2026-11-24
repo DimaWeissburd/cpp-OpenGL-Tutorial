@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <Scene.h>
+#include <Algorithms/Ray.h>
 #include <Algorithms/States.hpp>
 #include <IO/Joystick.h>
 #include <IO/Keyboard.h>
@@ -284,6 +285,15 @@ void launchItem(float dt) {
     }
 }
 
+void emitRay() {
+    Ray ray(camera.cameraPosition, camera.cameraFront);
+    float tmin = std::numeric_limits<float>::max();
+    BoundingRegion* intersected = scene.octree->checkCollisionsRay(ray, tmin);
+    if (intersected) {
+        scene.markForDeletion(intersected->instance->instanceId);
+    }
+}
+
 void processInput(double dt) {
     scene.processInput(dt);
 
@@ -310,5 +320,9 @@ void processInput(double dt) {
         if (Keyboard::keyPressed(GLFW_KEY_1 + i)) {
             States::toggleIndex(&scene.activePointLights, i);
         }
+    }
+
+    if (Mouse::buttonPressed(GLFW_MOUSE_BUTTON_1)) {
+        emitRay();
     }
 }

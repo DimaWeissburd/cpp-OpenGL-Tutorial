@@ -348,6 +348,59 @@ void Octree::node::checkCollisionsChildren(BoundingRegion object) {
     }
 }
 
+BoundingRegion* Octree::node::checkCollisionsRay(Ray ray, float& tmin) {
+    float tmin_tmp = std::numeric_limits<float>::max();
+    float tmax_tmp = std::numeric_limits<float>::lowest();
+    float t_tmp = std::numeric_limits<float>::max();
+
+    if (ray.intersectsBoundingRegion(region, tmin_tmp, tmax_tmp)) {
+        if (tmin_tmp >= tmin) {
+            return nullptr;
+        }
+
+        BoundingRegion* ret = nullptr, * ret_tmp = nullptr;
+
+        for (BoundingRegion& boundingRegion : this->objects) {
+            tmin_tmp = std::numeric_limits<float>::max();
+            tmax_tmp = std::numeric_limits<float>::lowest();
+
+            if (ray.intersectsBoundingRegion(boundingRegion, tmin_tmp, tmax_tmp)) {
+                if (tmin_tmp > tmin) {
+                    continue;
+                } else if (boundingRegion.collisionMesh) {
+                    t_tmp = std::numeric_limits<float>::max();
+                    if (ray.intersectsMesh(boundingRegion.collisionMesh, boundingRegion.instance, t_tmp)) {
+                        if (t_tmp < tmin) {
+                            tmin = t_tmp;
+                            ret = &boundingRegion;
+                        }
+                    }
+                } else {
+                    if (tmin_tmp < tmin) {
+                        tmin = tmin_tmp;
+                        ret = &boundingRegion;
+                    }
+                }
+            }
+        }
+
+        if (children) {
+            for (unsigned char flags = activeOctants, i = 0; flags > 0; flags >>= 1, i++) {
+                if (States::isIndexActive(&flags, 0) && children[i] != nullptr) {
+                    ret_tmp = children[i]->checkCollisionsRay(ray, tmin);
+                    if (ret_tmp) {
+                        ret = ret_tmp;
+                    }
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    return nullptr;
+}
+
 void Octree::node::destroy() {
     if (children != nullptr) {
         for (int flags = activeOctants, i = 0; flags > 0; flags >>= 1, i++) {

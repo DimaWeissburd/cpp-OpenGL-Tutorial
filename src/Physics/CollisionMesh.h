@@ -14,10 +14,10 @@ typedef struct Face {
 	unsigned int i1, i2, i3;
 
 	glm::vec3 baseNormal;
-	glm::vec3 norm;
+	glm::vec3 normal;
 
 	bool collidesWithFace(RigidBody* thisRB, struct Face& face, RigidBody* faceRB, glm::vec3& retNorm);
-	bool collidesWithSphere(RigidBody* thisRB, BoundingRegion& br, glm::vec3& retNorm);
+	bool collidesWithSphere(RigidBody* thisRB, BoundingRegion& boundingRegion, glm::vec3& retNorm);
 } Face;
 
 class CollisionMesh {

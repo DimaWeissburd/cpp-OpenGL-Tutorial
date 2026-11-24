@@ -7,6 +7,7 @@
 #include "List.hpp"
 #include "States.hpp"
 #include "Bounds.h"
+#include "Ray.h"
 #include "Trie.hpp"
 #include "../Graphics/Model.h"
 
@@ -68,6 +69,8 @@ namespace Octree {
 		void checkCollisionsSelf(BoundingRegion object);
 
 		void checkCollisionsChildren(BoundingRegion object);
+
+		BoundingRegion* checkCollisionsRay(Ray ray, float& tmin);
 
 		void destroy();
 	};

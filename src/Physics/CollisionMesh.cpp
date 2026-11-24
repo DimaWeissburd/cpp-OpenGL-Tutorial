@@ -15,13 +15,13 @@ bool Face::collidesWithFace(RigidBody* thisRB, Face& face, RigidBody* faceRB, gl
 		P3 - P2
 	};
 
-	glm::vec3 thisNorm = thisRB->normalModel * this->norm;
+	glm::vec3 thisNorm = thisRB->normalModel * this->normal;
 
 	glm::vec3 U1 = mat4vec3mult(faceRB->model, face.mesh->points[face.i1]) - P1;
 	glm::vec3 U2 = mat4vec3mult(faceRB->model, face.mesh->points[face.i2]) - P1;
 	glm::vec3 U3 = mat4vec3mult(faceRB->model, face.mesh->points[face.i3]) - P1;
 
-	retNorm = faceRB->normalModel * face.norm;
+	retNorm = faceRB->normalModel * face.normal;
 
 	// set P1 as the origin
 	P1[0] = 0.0f; P1[1] = 0.0f; P1[2] = 0.0f;
@@ -107,8 +107,8 @@ bool Face::collidesWithSphere(RigidBody* thisRB, BoundingRegion& br, glm::vec3& 
 	glm::vec3 P2 = mat4vec3mult(thisRB->model, this->mesh->points[i2]);
 	glm::vec3 P3 = mat4vec3mult(thisRB->model, this->mesh->points[i3]);
 
-	glm::vec3 norm = thisRB->normalModel * this->norm;
-	glm::vec3 unitN = norm / glm::length(norm);
+	glm::vec3 norm = thisRB->normalModel * this->normal;
+	glm::vec3 unitN = normal / glm::length(norm);
 
 	glm::vec3 distanceVec = br.center - P1;
 	float distance = glm::dot(distanceVec, unitN);
