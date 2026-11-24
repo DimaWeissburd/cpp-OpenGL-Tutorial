@@ -44,8 +44,16 @@ IniFile ini("Settings.ini");
 Scene scene(ini);
 Camera camera(ini);
 
-void processInput(double dt);
 void renderScene(Shader shader);
+void renderObjects(Shader shader);
+void renderLamps(Shader shader);
+void processInput(double dt);
+void launchItem();
+void emitRay();
+void keyChanged(GLFWwindow* window, int key, int scancode, int action, int mods);
+void cursorChanged(GLFWwindow* window, double _x, double _y);
+void mouseButtonChanged(GLFWwindow* window, int button, int action, int mods);
+void scrollChanged(GLFWwindow* window, double dx, double dy);
 
 float dt = 0.0f;
 float lastFrame = 0.0f;
@@ -189,6 +197,11 @@ int main() {
         std::cout << "Joystick not present." << std::endl;
     }
 
+    Keyboard::keyCallbacks.push_back(keyChanged);
+    Mouse::cursorPositionCallbacks.push_back(cursorChanged);
+    Mouse::mouseButtonCallbacks.push_back(mouseButtonChanged);
+    Mouse::mouseScrollCallbacks.push_back(scrollChanged);
+
     scene.variableLog["Time"] = (double)0.0;
 
     scene.defaultFBO.bind();
@@ -295,17 +308,26 @@ void emitRay() {
 }
 
 void processInput(double dt) {
-    scene.processInput(dt);
-
-    if (Keyboard::key(GLFW_KEY_ESCAPE)) {
-        scene.setShouldClose(true);
-    }
-
     if (States::isIndexActive(&scene.activeSpotLights, 0)) {
         scene.spotLights[0]->position = scene.getActiveCamera()->cameraPosition;
         scene.spotLights[0]->direction = scene.getActiveCamera()->cameraFront;
         scene.spotLights[0]->up = scene.getActiveCamera()->cameraUp; 
         scene.spotLights[0]->updateMatrices();
+    }
+    scene.processInput(dt);
+}
+
+void keyChanged(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (Keyboard::keyPressed(GLFW_KEY_ESCAPE))
+    {
+        scene.setShouldClose(true);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        if (Keyboard::keyPressed(GLFW_KEY_1 + i)) {
+            States::toggleIndex(&scene.activePointLights, i);
+        }
     }
 
     if (Keyboard::keyPressed(GLFW_KEY_F)) {
@@ -316,13 +338,25 @@ void processInput(double dt) {
         launchItem(dt);
     }
 
-    for (int i = 0; i < 4; i++) {
-        if (Keyboard::keyPressed(GLFW_KEY_1 + i)) {
-            States::toggleIndex(&scene.activePointLights, i);
-        }
-    }
+    scene.keyChanged(window, key, scancode, action, mods);
+}
 
-    if (Mouse::buttonPressed(GLFW_MOUSE_BUTTON_1)) {
+void cursorChanged(GLFWwindow* window, double _x, double _y)
+{
+    scene.cursorChanged(window, _x, _y);
+}
+
+void mouseButtonChanged(GLFWwindow* window, int button, int action, int mods)
+{
+    if (Mouse::buttonPressed(GLFW_MOUSE_BUTTON_1))
+    {
         emitRay();
     }
+
+    scene.mouseButtonChanged(window, button, action, mods);
+}
+
+void scrollChanged(GLFWwindow* window, double dx, double dy)
+{
+    scene.scrollChanged(window, dx, dy);
 }

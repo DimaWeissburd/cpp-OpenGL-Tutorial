@@ -60,6 +60,11 @@ public:
 	void updateLightUBO();
 
 	void processInput(float dt);
+	void keyChanged(GLFWwindow* window, int key, int scancode, int action, int mods);
+	void cursorChanged(GLFWwindow* window, double _x, double _y);
+	void mouseButtonChanged(GLFWwindow* window, int button, int action, int mods);
+	void scrollChanged(GLFWwindow* window, double dx, double dy);
+
 	void update();
 	void newFrame(Box& box);
 	void renderShader(Shader shader, bool applyLighting = true);
@@ -76,6 +81,8 @@ public:
 
 	void setShouldClose(bool shouldClose);
 	void setWindowColor(float r, float g, float b, float a);
+
+	void updateCameraMatrices(int index);
 
 	void registerModel(Model* model);
 	RigidBody* generateInstance(std::string modelId, glm::vec3 position = glm::vec3(0.0f), glm::vec3 rotation = glm::vec3(0.0f), glm::vec3 size = glm::vec3(1.0f), float mass = 1.0f);

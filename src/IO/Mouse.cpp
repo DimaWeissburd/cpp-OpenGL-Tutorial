@@ -1,5 +1,9 @@
 #include "Mouse.h"
 
+std::vector<void(*)(GLFWwindow* window, double _x, double _y)> Mouse::cursorPositionCallbacks;
+std::vector<void(*)(GLFWwindow* window, int button, int action, int mods)> Mouse::mouseButtonCallbacks;
+std::vector<void(*)(GLFWwindow* window, double dx, double dy)> Mouse::mouseScrollCallbacks;
+
 double Mouse::x = 0;
 double Mouse::y = 0;
 double Mouse::lastX = 0;
@@ -12,7 +16,7 @@ bool Mouse::firstMouse = true;
 bool Mouse::buttons[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 bool Mouse::buttonsChanged[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 
-void Mouse::cursorPosCallback(GLFWwindow* window, double _x, double _y) {
+void Mouse::cursorPositionCallback(GLFWwindow* window, double _x, double _y) {
     x = _x;
     y = _y;
     if (firstMouse) {
@@ -24,6 +28,11 @@ void Mouse::cursorPosCallback(GLFWwindow* window, double _x, double _y) {
     dy = lastY - y;
     lastX = x;
     lastY = y;
+
+    for (void(*func)(GLFWwindow*, double, double) : Mouse::cursorPositionCallbacks)
+    {
+        func(window, _x, _y);
+    }
 }
 
 void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -35,11 +44,21 @@ void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int 
         buttons[button] = false;
     }
     buttonsChanged[button] = action != GLFW_REPEAT;
+
+    for (void(*func)(GLFWwindow*, int, int, int) : Mouse::mouseButtonCallbacks)
+    {
+        func(window, button, action, mods);
+    }
 }
 
 void Mouse::mouseScrollCallback(GLFWwindow* window, double dx, double dy) {
     scrollDX = dx;
     scrollDY = dy;
+
+    for (void(*func)(GLFWwindow*, double, double) : Mouse::mouseScrollCallbacks)
+    {
+        func(window, dx, dy);
+    }
 }
 
 double Mouse::getMouseX() {
@@ -90,4 +109,8 @@ bool Mouse::buttonPressed(int button) {
 
 bool Mouse::buttonReleased(int button) {
     return !buttons[button] && buttonChanged(button);
+}
+
+void Mouse::clearButtonsChanged() {
+    memset(buttonsChanged, 0, (size_t)GLFW_MOUSE_BUTTON_LAST);
 }

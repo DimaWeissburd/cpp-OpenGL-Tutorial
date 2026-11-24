@@ -66,7 +66,7 @@ bool Scene::init() {
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	glfwSetKeyCallback(window, Keyboard::keyCallback);
-	glfwSetCursorPosCallback(window, Mouse::cursorPosCallback);
+	glfwSetCursorPosCallback(window, Mouse::cursorPositionCallback);
 	glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
 	glfwSetScrollCallback(window, Mouse::mouseScrollCallback);
 
@@ -80,7 +80,8 @@ bool Scene::init() {
 	// Stencil testing
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // Replace fragments only if both stencil and depth pass
-
+	
+	glfwSwapInterval(1);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -218,45 +219,75 @@ void Scene::updateLightUBO() {
 
 void Scene::processInput(float dt) {
 	if (activeCamera != -1 && activeCamera < cameras.size()) {
-		double dx = Mouse::getDX();
-		double dy = Mouse::getDY();
+		// active camera exists
+
+		// set camera pos/matrices, continuously poll
+		if (Keyboard::key(GLFW_KEY_W)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::FORWARD, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+		if (Keyboard::key(GLFW_KEY_S)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::BACKWARD, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+		if (Keyboard::key(GLFW_KEY_D)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::RIGHT, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+		if (Keyboard::key(GLFW_KEY_A)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::LEFT, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+		if (Keyboard::key(GLFW_KEY_SPACE)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::UP, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+		if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
+			cameras[activeCamera]->updateCameraPosition(CameraDirection::DOWN, dt);
+			cameraPosition = cameras[activeCamera]->cameraPosition;
+			updateCameraMatrices(activeCamera);
+		}
+	}
+
+	Keyboard::clearKeysChanged();
+	Mouse::clearButtonsChanged();
+}
+
+void Scene::keyChanged(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+
+}
+
+void Scene::cursorChanged(GLFWwindow* window, double _x, double _y)
+{
+	if (activeCamera != -1 && activeCamera < cameras.size()) {
+		double dx = Mouse::getDX(), dy = Mouse::getDY();
 		if (dx != 0 || dy != 0) {
 			cameras[activeCamera]->updateCameraDirection(dx, dy);
 		}
 
+		updateCameraMatrices(activeCamera);
+	}
+}
+
+void Scene::mouseButtonChanged(GLFWwindow* window, int button, int action, int mods)
+{
+
+}
+
+void Scene::scrollChanged(GLFWwindow* window, double dx, double dy)
+{
+	if (activeCamera != -1 && activeCamera < cameras.size()) {
 		double scrollDy = Mouse::getScrollDY();
 		if (scrollDy != 0) {
 			cameras[activeCamera]->updateCameraZoom(scrollDy);
 		}
-
-		if (Keyboard::key(GLFW_KEY_W)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::FORWARD, dt);
-		}
-		if (Keyboard::key(GLFW_KEY_S)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::BACKWARD, dt);
-		}
-		if (Keyboard::key(GLFW_KEY_D)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::RIGHT, dt);
-		}
-		if (Keyboard::key(GLFW_KEY_A)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::LEFT, dt);
-		}
-		if (Keyboard::key(GLFW_KEY_SPACE)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::UP, dt);
-		}
-		if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
-			cameras[activeCamera]->updateCameraPosition(CameraDirection::DOWN, dt);
-		}
-
-		view = cameras[activeCamera]->getViewMatrix();
-		projection = glm::perspective(
-			glm::radians(cameras[activeCamera]->getZoom()),
-			(float)screenWidth / (float)screenHeight,
-			0.1f, 100.0f
-		);
-		textProjection = glm::ortho(0.0f, (float)screenWidth, 0.0f, (float)screenHeight);
-
-		cameraPosition = cameras[activeCamera]->cameraPosition;
+		updateCameraMatrices(activeCamera);
 	}
 }
 
@@ -273,7 +304,7 @@ void Scene::newFrame(Box& box) {
 	octree->update(box);
 
 	glfwSwapBuffers(window);
-	glfwPollEvents();
+	glfwWaitEventsTimeout(0.001);
 }
 
 void Scene::renderShader(Shader shader, bool applyLighting) {
@@ -386,6 +417,18 @@ void Scene::setWindowColor(float r, float g, float b, float a) {
 	backgroundColor[1] = g;
 	backgroundColor[2] = b;
 	backgroundColor[3] = a;
+}
+
+void Scene::updateCameraMatrices(int idx)
+{
+	// set matrices
+	view = cameras[activeCamera]->getViewMatrix();
+	projection = glm::perspective(
+		glm::radians(cameras[activeCamera]->getZoom()),
+		(float)screenWidth / (float)screenHeight,
+		0.1f, 100.0f
+	);
+	textProjection = glm::ortho(0.0f, (float)screenWidth, 0.0f, (float)screenHeight);
 }
 
 void Scene::registerModel(Model* model) {
